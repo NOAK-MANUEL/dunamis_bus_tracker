@@ -3,6 +3,7 @@
 "use client";
 
 import { getBuses } from "@/actions/buses";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 type Location = {
@@ -16,24 +17,24 @@ type Location = {
 
 const locations: Location[] = [
   {
-    id: "enugu",
-    name: "Enugu",
-    region: "Enugu State",
+    id: "Kuje",
+    name: "Kuje",
+    region: "Kuje State",
     buses: 8,
     live: 7,
     updated: "2 min ago",
   },
   {
-    id: "abuja",
-    name: "Abuja",
+    id: "Lubge",
+    name: "Lubge",
     region: "FCT",
     buses: 6,
     live: 5,
     updated: "4 min ago",
   },
   {
-    id: "nsukka",
-    name: "Nsukka",
+    id: "Gwagwalada",
+    name: "Gwagwalada",
     region: "Enugu State",
     buses: 4,
     live: 4,
@@ -96,7 +97,7 @@ export default function HomePage() {
         {/* Header */}
         <header className="border-b border-white/[0.06]">
           <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
-            <a href="/" className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-[#06100b] shadow-lg shadow-emerald-500/10">
                 <BusIcon />
               </div>
@@ -109,35 +110,42 @@ export default function HomePage() {
                   Bus Tracker
                 </div>
               </div>
-            </a>
+            </Link>
 
             <nav className="hidden items-center gap-8 text-sm text-white/55 sm:flex">
-              <a
+              <Link
                 href="#locations"
                 className="transition hover:text-white"
               >
                 Locations
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/driver"
                 className="transition hover:text-white"
               >
                 Driver
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/admin/login"
                 className="transition hover:text-white"
               >
                 Admin
-              </a>
+              </Link>
             </nav>
 
-            <a
+           {/* <Link
               href="/driver"
               className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-medium text-white transition hover:bg-white/[0.08]"
             >
               Driver access
-            </a>
+            </Link>*/}
+
+             <Link
+              href="/admin"
+              className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-medium text-white transition hover:bg-white/[0.08]"
+            >
+              Admin
+            </Link>
           </div>
         </header>
 
@@ -301,13 +309,13 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <a
+              <Link
                 href="/driver"
                 className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-semibold text-[#06100b] transition hover:bg-emerald-300"
               >
                 Open driver portal
                 <ArrowIcon />
-              </a>
+              </Link>
             </div>
           </div>
         </section>
@@ -320,12 +328,12 @@ export default function HomePage() {
             </div>
 
             <div className="flex gap-5">
-              <a href="#" className="hover:text-white/50">
+              <Link href="#" className="hover:text-white/50">
                 Privacy
-              </a>
-              <a href="#" className="hover:text-white/50">
+              </Link>
+             {/* <Link href="#" className="hover:text-white/50">
                 Support
-              </a>
+              </Link>*/}
             </div>
           </div>
         </footer>
@@ -353,8 +361,8 @@ function Stat({
 
 function LocationCard({ location }: { location: Location }) {
   return (
-    <a
-      href={`/location/${location.id}`}
+    <Link
+      href={`/locations/${location.id}`}
       className="group relative overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 transition duration-300 hover:-translate-y-0.5 hover:border-emerald-400/20 hover:bg-white/[0.04]"
     >
       <div className="absolute right-0 top-0 h-24 w-24 rounded-full bg-emerald-400/[0.04] blur-2xl transition group-hover:bg-emerald-400/[0.08]" />
@@ -406,7 +414,7 @@ function LocationCard({ location }: { location: Location }) {
           <ArrowIcon />
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
 
