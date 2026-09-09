@@ -1,6 +1,8 @@
-// "use server";
-
-// import { redirect } from "next/navigation";
+"use server";
+import {createClient} from "@/lib/supabase/server"
+import { AdminLoginInput, adminLoginSchema } from "@/lib/validation";
+import bcrypt from "bcrypt"
+import { redirect } from "next/navigation";
 // import { supabaseServer } from "@/lib/supabase/server";
 // import {
 //   adminLoginSchema,
@@ -50,3 +52,28 @@
 
 //   redirect("/admin");
 // }
+
+export const loginAdmin = async(data:AdminLoginInput)=>{
+	const {email,password} = adminLoginSchema.parse(data)
+
+	const superbase = await createClient()
+	const {data:admin,error} = await superbase.from("admin").select("email,password").eq("email",email).maybeSingle()
+
+	if (error || !admin){
+		throw new Error("Incorrect email or password")
+	}
+
+	const valid = bcrypt.compareSync(password,admin.password)
+
+
+	if (!valid){
+		throw new Error("Incorrect email or password")
+	}
+
+	redirect("/admin")
+
+}
+
+
+
+
