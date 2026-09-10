@@ -12,7 +12,10 @@ export const addLocation = async (data:CreateLocationInput ):Promise<boolean>=>{
 
 export const getLocations = async ( )=>{
 	const supabase = await createClient()
-	const locations = await supabase.from("locations").select("id,name,buses (count)")
+	const {data:locations,error} = await supabase.from("locations").select("id,name,buses (id,is_active)").eq("is_active",true)
+	if (error){
+		throw new Error(error.message)
+	}
 
 	return locations
 }

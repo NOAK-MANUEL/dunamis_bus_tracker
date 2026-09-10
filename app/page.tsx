@@ -2,72 +2,23 @@
 
 "use client";
 
-import { getBuses } from "@/actions/buses";
+import { getLocations } from "@/actions/location";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 
 type Location = {
   id: string;
   name: string;
-  region: string;
+
   buses: number;
   live: number;
-  updated: string;
 };
 
-const locations: Location[] = [
-  {
-    id: "Kuje",
-    name: "Kuje",
-    region: "Kuje State",
-    buses: 8,
-    live: 7,
-    updated: "2 min ago",
-  },
-  {
-    id: "Lubge",
-    name: "Lubge",
-    region: "FCT",
-    buses: 6,
-    live: 5,
-    updated: "4 min ago",
-  },
-  {
-    id: "Gwagwalada",
-    name: "Gwagwalada",
-    region: "Enugu State",
-    buses: 4,
-    live: 4,
-    updated: "1 min ago",
-  },
-  {
-    id: "onitsha",
-    name: "Onitsha",
-    region: "Anambra State",
-    buses: 5,
-    live: 3,
-    updated: "8 min ago",
-  },
-  {
-    id: "lagos",
-    name: "Lagos",
-    region: "Lagos State",
-    buses: 9,
-    live: 8,
-    updated: "3 min ago",
-  },
-  {
-    id: "ibadan",
-    name: "Ibadan",
-    region: "Oyo State",
-    buses: 3,
-    live: 2,
-    updated: "11 min ago",
-  },
-];
 
 export default function HomePage() {
   const [search, setSearch] = useState("");
+    const [locations, setLocations] = useState<Location[]>([]);
 
   const filteredLocations = useMemo(() => {
     const value = search.toLowerCase().trim();
@@ -76,21 +27,31 @@ export default function HomePage() {
 
     return locations.filter(
       (location) =>
-        location.name.toLowerCase().includes(value) ||
-        location.region.toLowerCase().includes(value)
+        location.name.toLowerCase().includes(value) 
+        // location.region.toLowerCase().includes(value)
     );
   }, [search]);
 
   useEffect(()=>{
-    getBuses().then(res=>console.log(res)).catch(err=>console.log(err.message))
+    getLocations().then(res=>{
+      setLocations(res.map((data)=>{
+        return {
+          id: data.id,
+          name:data.name,
+          buses: data.buses.length,
+          live: data.buses.filter(bus=>bus.is_active).length,
+
+        } as Location
+      }))
+    }).catch(err=>toast.error(err.message))
   },[])
 
   return (
     <main className="min-h-screen bg-[#07100c] text-white">
       {/* Background */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-[-300px] h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-[140px]" />
-        <div className="absolute bottom-[-300px] right-[-200px] h-[500px] w-[500px] rounded-full bg-emerald-400/5 blur-[120px]" />
+        <div className="absolute left-1/2 top-[-300px] h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-amber-500/10 blur-[140px]" />
+        <div className="absolute bottom-[-300px] right-[-200px] h-[500px] w-[500px] rounded-full bg-amber-400/5 blur-[120px]" />
       </div>
 
       <div className="relative">
@@ -98,7 +59,7 @@ export default function HomePage() {
         <header className="border-b border-white/[0.06]">
           <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
             <Link href="/" className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-[#06100b] shadow-lg shadow-emerald-500/10">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-[#06100b] shadow-lg shadow-amber-500/10">
                 <BusIcon />
               </div>
 
@@ -125,12 +86,7 @@ export default function HomePage() {
               >
                 Driver
               </Link>
-              <Link
-                href="/admin/login"
-                className="transition hover:text-white"
-              >
-                Admin
-              </Link>
+             
             </nav>
 
            {/* <Link
@@ -141,7 +97,7 @@ export default function HomePage() {
             </Link>*/}
 
              <Link
-              href="/admin"
+              href="/admin/login"
               className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-medium text-white transition hover:bg-white/[0.08]"
             >
               Admin
@@ -152,14 +108,14 @@ export default function HomePage() {
         {/* Hero */}
         <section className="mx-auto max-w-7xl px-5 pb-16 pt-16 sm:px-8 sm:pb-24 sm:pt-24">
           <div className="max-w-3xl">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.06] px-3 py-1.5 text-xs text-emerald-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-400/15 bg-amber-400/[0.06] px-3 py-1.5 text-xs text-amber-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
               Live bus tracking
             </div>
 
             <h1 className="text-4xl font-semibold leading-[1.08] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl">
               Find your Dunamis
-              <span className="block text-emerald-400">
+              <span className="block text-amber-400">
                 bus in real time.
               </span>
             </h1>
@@ -189,11 +145,10 @@ export default function HomePage() {
           </div>
 
           {/* Quick stats */}
-          <div className="mt-14 grid max-w-4xl grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.07] sm:grid-cols-4">
-            <Stat value="35" label="Buses" />
-            <Stat value="29" label="Live now" />
-            <Stat value="6" label="Locations" />
-            <Stat value="< 5m" label="Avg. update" />
+          <div className="mt-14 grid max-w-4xl grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.07] sm:grid-cols-3">
+            <Stat value={locations.reduce((prev,current)=>prev+current.buses,0).toString()} label="Buses" />
+            <Stat value={locations.reduce((prev,current)=>prev+current.live,0).toString()} label="Live now" />
+            <Stat value={locations.length.toString()} label="Locations" />
           </div>
         </section>
 
@@ -205,7 +160,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
             <div className="mb-8 flex items-end justify-between gap-6">
               <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-emerald-400/80">
+                <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-amber-400/80">
                   Bus locations
                 </p>
                 <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -254,7 +209,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
             <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
               <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-emerald-400/80">
+                <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-amber-400/80">
                   Simple to use
                 </p>
 
@@ -293,10 +248,10 @@ export default function HomePage() {
 
         {/* Driver CTA */}
         <section className="px-5 pb-16 sm:px-8 sm:pb-20">
-          <div className="mx-auto max-w-7xl overflow-hidden rounded-3xl border border-emerald-400/10 bg-gradient-to-br from-emerald-400/[0.08] to-transparent p-8 sm:p-12">
+          <div className="mx-auto max-w-7xl overflow-hidden rounded-3xl border border-amber-400/10 bg-gradient-to-br from-amber-400/[0.08] to-transparent p-8 sm:p-12">
             <div className="flex flex-col justify-between gap-8 sm:flex-row sm:items-center">
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-emerald-400/80">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-amber-400/80">
                   Drivers
                 </p>
 
@@ -311,7 +266,7 @@ export default function HomePage() {
 
               <Link
                 href="/driver"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-semibold text-[#06100b] transition hover:bg-emerald-300"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-[#06100b] transition hover:bg-amber-300"
               >
                 Open driver portal
                 <ArrowIcon />
@@ -363,18 +318,18 @@ function LocationCard({ location }: { location: Location }) {
   return (
     <Link
       href={`/locations/${location.id}`}
-      className="group relative overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 transition duration-300 hover:-translate-y-0.5 hover:border-emerald-400/20 hover:bg-white/[0.04]"
+      className="group relative overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 transition duration-300 hover:-translate-y-0.5 hover:border-amber-400/20 hover:bg-white/[0.04]"
     >
-      <div className="absolute right-0 top-0 h-24 w-24 rounded-full bg-emerald-400/[0.04] blur-2xl transition group-hover:bg-emerald-400/[0.08]" />
+      <div className="absolute right-0 top-0 h-24 w-24 rounded-full bg-amber-400/[0.04] blur-2xl transition group-hover:bg-amber-400/[0.08]" />
 
       <div className="relative">
         <div className="flex items-start justify-between">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-400/[0.08] text-emerald-400">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400/[0.08] text-amber-400">
             <LocationIcon />
           </div>
 
-          <div className="flex items-center gap-1.5 rounded-full bg-emerald-400/[0.07] px-2.5 py-1 text-[10px] text-emerald-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <div className="flex items-center gap-1.5 rounded-full bg-amber-400/[0.07] px-2.5 py-1 text-[10px] text-amber-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
             Live
           </div>
         </div>
@@ -383,9 +338,9 @@ function LocationCard({ location }: { location: Location }) {
           {location.name}
         </h3>
 
-        <p className="mt-1 text-xs text-white/30">
+     {/*   <p className="mt-1 text-xs text-white/30">
           {location.region}
-        </p>
+        </p>*/}
 
         <div className="my-5 h-px bg-white/[0.06]" />
 
@@ -400,16 +355,16 @@ function LocationCard({ location }: { location: Location }) {
           </div>
 
           <div className="text-right">
-            <div className="text-xs font-medium text-emerald-300">
+            <div className="text-xs font-medium text-amber-300">
               {location.live} live
             </div>
-            <div className="mt-1 text-[10px] text-white/25">
+          {/*  <div className="mt-1 text-[10px] text-white/25">
               Updated {location.updated}
-            </div>
+            </div>*/}
           </div>
         </div>
 
-        <div className="mt-5 flex items-center justify-between text-xs font-medium text-white/35 transition group-hover:text-emerald-300">
+        <div className="mt-5 flex items-center justify-between text-xs font-medium text-white/35 transition group-hover:text-amber-300">
           View buses
           <ArrowIcon />
         </div>
@@ -429,7 +384,7 @@ function Step({
 }) {
   return (
     <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5">
-      <div className="text-xs font-medium text-emerald-400">
+      <div className="text-xs font-medium text-amber-400">
         {number}
       </div>
 

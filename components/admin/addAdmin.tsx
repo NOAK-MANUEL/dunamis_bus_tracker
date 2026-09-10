@@ -4,23 +4,23 @@ import { useForm } from "react-hook-form";
 import LoadingButton from "../loader";
 import {toast} from "react-toastify"
 import Input from "../input";
+import { addAdmin } from "@/actions/admin";
 export default function AddAdmin({closeModal}:{closeModal:()=>void}){
    const {handleSubmit, formState:{isSubmitting,errors}, register,reset} = useForm<AdminForm>({
     resolver: zodResolver(adminSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-    },
+   
   });
 
  const submitAdmin = async (data: AdminForm) => {
-    console.log(data);
+  try{
+    await addAdmin(data)
+          toast.success("Admin added successfully");
+              reset();
+                  closeModal();
+}catch (err){
+  toast.error(err instanceof Error && err.message)
+}
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    toast.success("Admin added successfully");
-    reset();
-    closeModal();
 
     // setTimeout(() => setSuccess(""), 3000);
   };

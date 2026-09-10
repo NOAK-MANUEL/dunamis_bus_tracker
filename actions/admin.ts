@@ -1,63 +1,16 @@
 "use server";
+import { setAdminSession } from "@/lib/auth/session";
 import {createClient} from "@/lib/supabase/server"
-import { AdminLoginInput, adminLoginSchema } from "@/lib/validation";
+import { AdminForm, AdminLoginInput, adminLoginSchema, adminSchema } from "@/lib/validation";
 import bcrypt from "bcrypt"
 import { redirect } from "next/navigation";
-// import { supabaseServer } from "@/lib/supabase/server";
-// import {
-//   adminLoginSchema,
-// } from "@/lib/validation";
-// import { setAdminSession } from "@/lib/auth/session";
 
-// export async function loginAdmin(formData: FormData) {
-//   const result = adminLoginSchema.safeParse({
-//     email: formData.get("email"),
-//     password: formData.get("password"),
-//   });
-
-//   if (!result.success) {
-//     return {
-//       error: result.error.issues[0]?.message ?? "Invalid input",
-//     };
-//   }
-
-//   const supabase = supabaseServer();
-
-//   const { data, error } = await supabase.auth.signInWithPassword({
-//     email: result.data.email,
-//     password: result.data.password,
-//   });
-
-//   if (error || !data.session || !data.user) {
-//     return {
-//       error: "Invalid email or password.",
-//     };
-//   }
-
-//   const { data: admin, error: adminError } = await supabase
-//     .from("admins")
-//     .select("id, role")
-//     .eq("id", data.user.id)
-//     .maybeSingle();
-
-//   if (adminError || !admin) {
-//     await supabase.auth.signOut();
-
-//     return {
-//       error: "This account does not have administrator access.",
-//     };
-//   }
-
-//   await setAdminSession(data.session.access_token);
-
-//   redirect("/admin");
-// }
 
 export const loginAdmin = async(data:AdminLoginInput)=>{
 	const {email,password} = adminLoginSchema.parse(data)
 
 	const superbase = await createClient()
-	const {data:admin,error} = await superbase.from("admin").select("email,password").eq("email",email).maybeSingle()
+	const {data:admin,error} = await superbase.from("admins").select("email,password").eq("is_active",true).eq("email",email).maybeSingle()
 
 	if (error || !admin){
 		throw new Error("Incorrect email or password")
@@ -70,9 +23,64 @@ export const loginAdmin = async(data:AdminLoginInput)=>{
 		throw new Error("Incorrect email or password")
 	}
 
+	setAdminSession(JSON.stringify(admin))
+
 	redirect("/admin")
 
 }
+
+export const addAdmin = async (data: AdminForm) => {
+  const { email, password, name } = adminSchema.parse(data)
+
+  const supabase = await createClient()
+
+  const { data: admin, error: selectError } = await supabase
+    .from("admins")
+    .select("email")
+    .eq("email", email)
+    .maybeSingle()
+
+  if (selectError) {
+    throw new Error(selectError.message)
+  }
+
+  if (admin) {
+    throw new Error("Email already exists")
+  }
+
+  const passwordHashed = bcrypt.hashSync(
+    password,
+    bcrypt.genSaltSync()
+  )
+
+  const { error: insertError } = await supabase
+    .from("admins")
+    .insert({
+      email,
+      name,
+      password: passwordHashed,
+    })
+
+  if (insertError) {
+    throw new Error(insertError.message)
+  }
+
+  return { success: true }
+}
+
+
+export const countAdmin = async()=>{
+
+	const superbase = await createClient()
+	const {data:records,error} = await superbase.from("admins").select("count").eq("is_active",true)
+
+	if (error){
+		throw new Error("An error occured",error)
+	}
+	return records[0]
+}
+
+
 
 
 

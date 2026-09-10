@@ -1,9 +1,11 @@
 "use client"
 
+import { loginAdmin } from "@/actions/admin";
 import LoadingButton from "@/components/loader";
 import { AdminLoginInput, adminLoginSchema } from "@/lib/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { toast } from "react-toastify";
 
 export default function AdminLoginPage() {
   const {handleSubmit, formState:{isSubmitting,errors}, register,} = useForm<AdminLoginInput>({
@@ -11,8 +13,13 @@ export default function AdminLoginPage() {
    
   });
 
-  const loginAdmin = async (data:AdminLoginInput)=>{
+  const adminLogin = async (data:AdminLoginInput)=>{
+    try{
+    await loginAdmin(data)
 
+  }catch (error){
+    toast.error(error instanceof Error && error.message)
+  }
   }
 
 
@@ -21,19 +28,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-green-600/10 ring-1 ring-green-500/20">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              className="h-7 w-7 text-green-500"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 16.5h14M6.5 16.5V9.75A1.75 1.75 0 0 1 8.25 8h7.5a1.75 1.75 0 0 1 1.75 1.75v6.75M8 8V6.5A1.5 1.5 0 0 1 9.5 5h5A1.5 1.5 0 0 1 16 6.5V8M4 16.5h16v2H4v-2Z"
-              />
-            </svg>
+            
           </div>
 
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -53,7 +48,7 @@ export default function AdminLoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(loginAdmin)} className="space-y-5">
+          <form onSubmit={handleSubmit(adminLogin)} className="space-y-5">
             <div>
               <label
                 htmlFor="email"
@@ -63,14 +58,15 @@ export default function AdminLoginPage() {
               </label>
 
               <input
-                id="email"
-                name="email"
-                type="email"
+                
+                {...register("email")}
                 autoComplete="email"
                 placeholder="admin@example.com"
                 required
                 className="w-full rounded-xl border border-white/[0.08] bg-black/40 px-4 py-3 text-sm outline-none transition placeholder:text-zinc-700 focus:border-green-500/50 focus:ring-2 focus:ring-green-500/10"
               />
+                            {errors.email && <p>{errors.email.message}</p>}
+
             </div>
 
             <div>
@@ -82,18 +78,21 @@ export default function AdminLoginPage() {
               </label>
 
               <input
-                id="password"
-                name="password"
-                type="password"
+                
+                {...register("password")}
                 autoComplete="current-password"
                 placeholder="••••••••"
                 required
                 className="w-full rounded-xl border border-white/[0.08] bg-black/40 px-4 py-3 text-sm outline-none transition placeholder:text-zinc-700 focus:border-green-500/50 focus:ring-2 focus:ring-green-500/10"
               />
+
+              {errors.password && <p>{errors.password.message}</p>}
             </div>
+
 
             <LoadingButton
               loading={isSubmitting}
+              type="submit"
 
               className="bg-green-600 text-white hover:bg-green-500"
             >

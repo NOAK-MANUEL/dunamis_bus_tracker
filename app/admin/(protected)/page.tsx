@@ -4,7 +4,9 @@ import Link from "next/link";
 import AddAdmin from "@/components/admin/addAdmin";
 import AddBus from "@/components/admin/addBus";
 import AddLocation from "@/components/admin/addLocation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { countAdmin } from "@/actions/admin";
+import { toast } from "react-toastify";
 
 /* -------------------------------------------------------------------------- */
 /* Schemas                                                                    */
@@ -65,7 +67,9 @@ export default function AdminPage() {
   /* ------------------------------- Bus form ------------------------------ */
 
  
-
+useEffect(()=>{
+  countAdmin().then((res)=>console.log(res)).catch(err=>toast.error(err.message))
+},[])
   
   
 
@@ -76,7 +80,7 @@ export default function AdminPage() {
       <header className="border-b border-white/[0.07] bg-[#07100c]/90">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between px-5 py-4 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400 text-sm font-black text-black">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 text-sm font-black text-black">
               D
             </div>
 
@@ -108,7 +112,7 @@ export default function AdminPage() {
         {/* Heading */}
 
         <div className="mb-8">
-          <p className="mb-2 text-sm font-medium text-emerald-400">
+          <p className="mb-2 text-sm font-medium text-amber-400">
             Overview
           </p>
 
@@ -126,11 +130,11 @@ export default function AdminPage() {
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            ["Total buses", "35", "+2 this month"],
-            ["Live now", "29", "83% online"],
-            ["Stale", "4", "Need attention"],
-            ["Locations", "6", "All active"],
-          ].map(([label, value, detail]) => (
+            ["Total buses", "35", ],
+            ["Live now", "29", ],
+            ["Stale", "4"],
+            ["Locations", "6",],
+          ].map(([label, value]) => (
             <div
               key={label}
               className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5"
@@ -140,7 +144,7 @@ export default function AdminPage() {
               <div className="mt-4 flex items-end justify-between">
                 <p className="text-3xl font-semibold">{value}</p>
 
-                <span className="text-xs text-white/30">{detail}</span>
+                {/*<span className="text-xs text-white/30">{detail}</span>*/}
               </div>
             </div>
           ))}
@@ -159,9 +163,9 @@ export default function AdminPage() {
           <div className="grid gap-3 sm:grid-cols-3">
             <button
               onClick={() => setModal("bus")}
-              className="group rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 text-left transition hover:border-emerald-400/20 hover:bg-emerald-400/[0.03]"
+              className="group rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 text-left transition hover:border-amber-400/20 hover:bg-amber-400/[0.03]"
             >
-              <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-400">
+              <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400/10 text-amber-400">
                 +
               </span>
 
@@ -173,9 +177,9 @@ export default function AdminPage() {
 
             <button
               onClick={() => setModal("location")}
-              className="group rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 text-left transition hover:border-emerald-400/20 hover:bg-emerald-400/[0.03]"
+              className="group rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 text-left transition hover:border-amber-400/20 hover:bg-amber-400/[0.03]"
             >
-              <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-400">
+              <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400/10 text-amber-400">
                 ◎
               </span>
 
@@ -187,9 +191,9 @@ export default function AdminPage() {
 
             <button
               onClick={() => setModal("admin")}
-              className="group rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 text-left transition hover:border-emerald-400/20 hover:bg-emerald-400/[0.03]"
+              className="group rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 text-left transition hover:border-amber-400/20 hover:bg-amber-400/[0.03]"
             >
-              <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-400">
+              <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400/10 text-amber-400">
                 +
               </span>
 
@@ -216,7 +220,7 @@ export default function AdminPage() {
 
                 <Link
                   href="/admin/buses"
-                  className="text-xs text-emerald-400 hover:text-emerald-300"
+                  className="text-xs text-amber-400 hover:text-amber-300"
                 >
                   View all
                 </Link>
@@ -230,7 +234,7 @@ export default function AdminPage() {
                   className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-2 w-2 rounded-full bg-emerald-400" />
+                    <div className="h-2 w-2 rounded-full bg-amber-400" />
 
                     <div>
                       <p className="text-sm font-medium">{bus.name}</p>
@@ -244,7 +248,7 @@ export default function AdminPage() {
                     <span
                       className={`text-xs ${
                         bus.status === "Live"
-                          ? "text-emerald-400"
+                          ? "text-amber-400"
                           : bus.status === "Recent"
                           ? "text-yellow-400"
                           : "text-red-400"
@@ -276,7 +280,7 @@ export default function AdminPage() {
 
                 <Link
                   href="/admin/locations"
-                  className="text-xs text-emerald-400 hover:text-emerald-300"
+                  className="text-xs text-amber-400 hover:text-amber-300"
                 >
                   Manage
                 </Link>
@@ -296,7 +300,7 @@ export default function AdminPage() {
                     </p>
                   </div>
 
-                  <span className="text-xs text-emerald-400">
+                  <span className="text-xs text-amber-400">
                     {location.live} live
                   </span>
                 </div>
