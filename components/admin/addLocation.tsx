@@ -6,6 +6,7 @@ import { LocationForm, locationSchema } from "@/lib/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {toast} from "react-toastify"
 import LoadingButton from "../loader";
+import { addLocation } from "@/actions/location";
 
 export default function AddLocation({closeModal}:{closeModal:()=>void}){
 
@@ -23,13 +24,15 @@ export default function AddLocation({closeModal}:{closeModal:()=>void}){
   
 
   const submitLocation = async (data: LocationForm) => {
-    console.log(data);
+    try{
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
+    await addLocation(data)
     toast.success("Location added successfully");
     reset();
     closeModal();
+  }catch (error){
+    toast.error(error instanceof Error && error.message)
+  }
 
     // setTimeout(() => setSuccess(""), 3000);
   };

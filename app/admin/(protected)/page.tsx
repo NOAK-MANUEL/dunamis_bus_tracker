@@ -7,6 +7,9 @@ import AddLocation from "@/components/admin/addLocation";
 import { useEffect, useState } from "react";
 import { countAdmin } from "@/actions/admin";
 import { toast } from "react-toastify";
+import { Bus, Location } from "@/types/database";
+import { getBuses } from "@/actions/buses";
+import { getAllLocations } from "@/actions/location";
 
 /* -------------------------------------------------------------------------- */
 /* Schemas                                                                    */
@@ -17,45 +20,47 @@ import { toast } from "react-toastify";
 /* Mock data                                                                   */
 /* -------------------------------------------------------------------------- */
 
-const locations = [
-  { id: "1", name: "Enugu", buses: 8, live: 7 },
-  { id: "2", name: "Abuja", buses: 7, live: 6 },
-  { id: "3", name: "Nsukka", buses: 5, live: 5 },
-  { id: "4", name: "Onitsha", buses: 6, live: 5 },
-  { id: "5", name: "Lagos", buses: 5, live: 4 },
-  { id: "6", name: "Ibadan", buses: 4, live: 2 },
-];
+// const locations = [
+//   { id: "1", name: "Enugu", buses: 8, live: 7 },
+//   { id: "2", name: "Abuja", buses: 7, live: 6 },
+//   { id: "3", name: "Nsukka", buses: 5, live: 5 },
+//   { id: "4", name: "Onitsha", buses: 6, live: 5 },
+//   { id: "5", name: "Lagos", buses: 5, live: 4 },
+//   { id: "6", name: "Ibadan", buses: 4, live: 2 },
+// ];
 
-const buses = [
-  {
-    name: "Dunamis Bus 01",
-    plate: "ENU-482-GH",
-    location: "Enugu",
-    status: "Live",
-    updated: "2 min ago",
-  },
-  {
-    name: "Dunamis Bus 02",
-    plate: "ABJ-731-KD",
-    location: "Abuja",
-    status: "Live",
-    updated: "4 min ago",
-  },
-  {
-    name: "Dunamis Bus 03",
-    plate: "ENU-218-AB",
-    location: "Enugu",
-    status: "Recent",
-    updated: "9 min ago",
-  },
-  {
-    name: "Dunamis Bus 04",
-    plate: "LAG-905-XM",
-    location: "Lagos",
-    status: "Stale",
-    updated: "27 min ago",
-  },
-];
+
+
+// const buses = [
+//   {
+//     name: "Dunamis Bus 01",
+//     plate: "ENU-482-GH",
+//     location: "Enugu",
+//     status: "Live",
+//     updated: "2 min ago",
+//   },
+//   {
+//     name: "Dunamis Bus 02",
+//     plate: "ABJ-731-KD",
+//     location: "Abuja",
+//     status: "Live",
+//     updated: "4 min ago",
+//   },
+//   {
+//     name: "Dunamis Bus 03",
+//     plate: "ENU-218-AB",
+//     location: "Enugu",
+//     status: "Recent",
+//     updated: "9 min ago",
+//   },
+//   {
+//     name: "Dunamis Bus 04",
+//     plate: "LAG-905-XM",
+//     location: "Lagos",
+//     status: "Stale",
+//     updated: "27 min ago",
+//   },
+// ];
 
 
 export default function AdminPage() {
@@ -63,12 +68,40 @@ export default function AdminPage() {
     const [modal, setModal] = useState<
     "bus" | "location" | "admin" | null
   >(null);
-
-  /* ------------------------------- Bus form ------------------------------ */
-
+  const [buses,setBuses] = useState<Bus[]>([])
+  const [locations,setLocations] = useState<Location[]>([])
+  const [totalAdmin,setTotalAdmin] = useState<number>(0)
  
 useEffect(()=>{
-  countAdmin().then((res)=>console.log(res)).catch(err=>toast.error(err.message))
+  (async function callDetails(){
+    try{
+     const res = await Promise.all([
+      await getBuses(),
+      await getAllLocations(),
+      await countAdmin()
+    ])
+
+     const [busArray,locationArray,adminTotal] = res
+     if(busArray.length>0){
+           setBuses(busArray as Bus[])
+
+     }
+
+     if(locationArray.length >0){
+      setLocations(locationArray as Location[])
+     }
+
+     if (adminTotal.count > 0){
+      setTotalAdmin(adminTotal.count)
+     }
+   }catch(error){
+    toast.error(error instanceof Error &&error.message)
+   }
+
+  })()
+
+ 
+  // countAdmin().then((res)=>console.log(res)).catch(err=>toast.error(err.message))
 },[])
   
   
@@ -130,10 +163,10 @@ useEffect(()=>{
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            ["Total buses", "35", ],
-            ["Live now", "29", ],
-            ["Stale", "4"],
-            ["Locations", "6",],
+            ["Total buses", buses.length, ],
+            ["Live now", buses.filter(b=>b.is_active).length, ],
+            ["Admin", totalAdmin],
+            ["Locations", locations.length,],
           ].map(([label, value]) => (
             <div
               key={label}
@@ -230,7 +263,7 @@ useEffect(()=>{
             <div className="divide-y divide-white/[0.06]">
               {buses.map((bus) => (
                 <div
-                  key={bus.plate}
+                  key={bus.plate_number}
                   className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-center gap-3">
@@ -239,7 +272,7 @@ useEffect(()=>{
                     <div>
                       <p className="text-sm font-medium">{bus.name}</p>
                       <p className="mt-1 text-xs text-white/30">
-                        {bus.plate} · {bus.location}
+                        {bus.plate_number} · {bus.locations?.name}
                       </p>
                     </div>
                   </div>
@@ -247,18 +280,16 @@ useEffect(()=>{
                   <div className="flex items-center gap-4">
                     <span
                       className={`text-xs ${
-                        bus.status === "Live"
-                          ? "text-amber-400"
-                          : bus.status === "Recent"
-                          ? "text-yellow-400"
-                          : "text-red-400"
+                        bus.is_active 
+                          ? "text-green-400"
+                          :  "text-yellow-400"
                       }`}
                     >
-                      {bus.status}
+                      {bus.is_active ? "Active":"Inactive"}
                     </span>
 
                     <span className="text-xs text-white/30">
-                      {bus.updated}
+                      {bus.updated_at}
                     </span>
                   </div>
                 </div>
@@ -296,12 +327,12 @@ useEffect(()=>{
                   <div>
                     <p className="text-sm">{location.name}</p>
                     <p className="mt-1 text-xs text-white/30">
-                      {location.buses} buses
+                      {location.buses?.length} buses
                     </p>
                   </div>
 
                   <span className="text-xs text-amber-400">
-                    {location.live} live
+                    {location.buses?.filter(bu=>bu.is_active).length} live
                   </span>
                 </div>
               ))}
@@ -347,7 +378,7 @@ useEffect(()=>{
             {/* Bus */}
 
             {modal === "bus" && (
-              <AddBus setModal={()=>setModal(null)}/>
+              <AddBus locations={locations} setModal={()=>setModal(null)}/>
             )}
 
             {/* Location */}

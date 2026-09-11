@@ -2,10 +2,15 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import LoadingButton from "@/components/loader";
+import { Bus, Location } from "@/types/database";
+import { adminLocationSetActive, getAllLocations } from "@/actions/location";
+import { toast } from "react-toastify";
+import { adminChangeBusPin, adminDeleteBus, getBuses } from "@/actions/buses";
 
 const locationSchema = z.object({
   name: z
@@ -24,131 +29,9 @@ const busPinSchema = z.object({
 type LocationForm = z.infer<typeof locationSchema>;
 type BusPinForm = z.infer<typeof busPinSchema>;
 
-type Bus = {
-  id: string;
-  name: string;
-  plate: string;
-  pin: string;
-  is_active: boolean;
-  last_update: string;
-};
 
-type Location = {
-  id: string;
-  name: string;
-  is_active: boolean;
-  buses: Bus[];
-};
 
-const initialLocations: Location[] = [
-  {
-    id: "1",
-    name: "Enugu",
-    is_active: true,
-    buses: [
-      {
-        id: "b1",
-        name: "Dunamis Bus 01",
-        plate: "ENU-482-GH",
-        pin: "1234",
-        is_active: true,
-        last_update: "2 min ago",
-      },
-      {
-        id: "b2",
-        name: "Dunamis Bus 02",
-        plate: "ENU-731-KD",
-        pin: "5678",
-        is_active: true,
-        last_update: "4 min ago",
-      },
-      {
-        id: "b3",
-        name: "Dunamis Bus 03",
-        plate: "ENU-218-AB",
-        pin: "2468",
-        is_active: true,
-        last_update: "9 min ago",
-      },
-    ],
-  },
-  {
-    id: "2",
-    name: "Abuja",
-    is_active: true,
-    buses: [
-      {
-        id: "b4",
-        name: "Dunamis Bus 04",
-        plate: "ABJ-905-XM",
-        pin: "1357",
-        is_active: true,
-        last_update: "3 min ago",
-      },
-      {
-        id: "b5",
-        name: "Dunamis Bus 05",
-        plate: "ABJ-221-KL",
-        pin: "8642",
-        is_active: true,
-        last_update: "6 min ago",
-      },
-    ],
-  },
-  {
-    id: "3",
-    name: "Nsukka",
-    is_active: true,
-    buses: [
-      {
-        id: "b6",
-        name: "Dunamis Bus 06",
-        plate: "NSK-441-AA",
-        pin: "1122",
-        is_active: true,
-        last_update: "5 min ago",
-      },
-    ],
-  },
-  {
-    id: "4",
-    name: "Onitsha",
-    is_active: true,
-    buses: [],
-  },
-  {
-    id: "5",
-    name: "Lagos",
-    is_active: false,
-    buses: [],
-  },
-];
 
-function LoadingButton({
-  children,
-  loading,
-  type = "button",
-  onClick,
-}: {
-  children: React.ReactNode;
-  loading?: boolean;
-  type?: "button" | "submit";
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={loading}
-      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 text-sm font-medium text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {loading && (
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/30 border-t-black" />
-      )}
-      {children}
-    </button>
-  );
-}
 
 function Icon({
   children,
@@ -173,9 +56,10 @@ function Icon({
 }
 
 export default function AdminLocationsPage() {
-  const [locations, setLocations] = useState(initialLocations);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [buses, setBuses] = useState<Bus[]>([])
   const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState<string | null>("1");
+  const [expanded, setExpanded] = useState<string | null>();
 
   const [locationModal, setLocationModal] = useState<{
     mode: "add" | "edit";
@@ -203,15 +87,25 @@ export default function AdminLocationsPage() {
   }, [locations, search]);
 
   const totalBuses = locations.reduce(
-    (total, location) => total + location.buses.length,
+    (total, location) => total + location.buses!.length,
     0
   );
+
+
 
   const activeLocations = locations.filter(
     (location) => location.is_active
   ).length;
 
-  function toggleLocation(locationId: string) {
+  useEffect(()=>{
+        getAllLocations().then(lo=>setLocations(lo as Location[])).catch(err=>toast.error(err.message))
+
+  },[])
+
+  async function toggleLocation(locationId: string,is_active:boolean) {
+    try{
+    await adminLocationSetActive(locationId,!is_active)
+
     setLocations((current) =>
       current.map((location) =>
         location.id === locationId
@@ -222,17 +116,25 @@ export default function AdminLocationsPage() {
           : location
       )
     );
+  }catch(error){
+    toast.error(error instanceof Error && error.message)
+  }
   }
 
-  function deleteBus() {
+  async function deleteBus() {
     if (!deleteModal) return;
+
+    try{
+
+
+    await adminDeleteBus(deleteModal.bus.id)
 
     setLocations((current) =>
       current.map((location) =>
         location.id === deleteModal.locationId
           ? {
               ...location,
-              buses: location.buses.filter(
+              buses: location.buses!.filter(
                 (bus) => bus.id !== deleteModal.bus.id
               ),
             }
@@ -241,17 +143,24 @@ export default function AdminLocationsPage() {
     );
 
     setDeleteModal(null);
+  }catch(error){
+    toast.error(error instanceof Error && error.message)
+  }
   }
 
-  function updateBusPin(busId: string, pin: string) {
+  async function updateBusPin(busId: string, pin: string) {
     if (!pinModal) return;
+
+    try{
+
+    await adminChangeBusPin(pin,busId)
 
     setLocations((current) =>
       current.map((location) =>
         location.id === pinModal.locationId
           ? {
               ...location,
-              buses: location.buses.map((bus) =>
+              buses: location.buses!.map((bus) =>
                 bus.id === busId
                   ? {
                       ...bus,
@@ -265,19 +174,22 @@ export default function AdminLocationsPage() {
     );
 
     setPinModal(null);
+  }catch(error){
+    toast.error(error instanceof Error && error.message)
+  }
   }
 
   return (
     <main className="min-h-screen bg-[#07100c] text-white">
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute left-1/2 top-[-320px] h-[600px] w-[700px] -translate-x-1/2 rounded-full bg-emerald-500/[0.055] blur-3xl" />
+        <div className="absolute left-1/2 top-[-320px] h-[600px] w-[700px] -translate-x-1/2 rounded-full bg-amber-500/[0.055] blur-3xl" />
       </div>
 
       {/* Header */}
       <header className="border-b border-white/[0.06]">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-sm font-bold text-black">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-sm font-bold text-black">
               D
             </div>
 
@@ -305,7 +217,7 @@ export default function AdminLocationsPage() {
         {/* Heading */}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-emerald-400/70">
+            <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-amber-400/70">
               Administration
             </p>
 
@@ -318,16 +230,11 @@ export default function AdminLocationsPage() {
             </p>
           </div>
 
-          <LoadingButton onClick={() => setLocationModal({ mode: "add" })}>
-            <Icon>
-              <path d="M12 5v14M5 12h14" />
-            </Icon>
-            Add location
-          </LoadingButton>
+        
         </div>
 
         {/* Stats */}
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-2">
           <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4">
             <p className="text-xs text-white/35">Locations</p>
             <p className="mt-1 text-2xl font-semibold">{locations.length}</p>
@@ -338,10 +245,7 @@ export default function AdminLocationsPage() {
             <p className="mt-1 text-2xl font-semibold">{activeLocations}</p>
           </div>
 
-          <div className="col-span-2 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4 sm:col-span-1">
-            <p className="text-xs text-white/35">Assigned buses</p>
-            <p className="mt-1 text-2xl font-semibold">{totalBuses}</p>
-          </div>
+         
         </div>
 
         {/* Search */}
@@ -372,15 +276,25 @@ export default function AdminLocationsPage() {
                 {/* Location heading */}
                 <div className="flex items-center gap-3 p-4 sm:p-5">
                   <button
-                    onClick={() =>
-                      setExpanded(isOpen ? null : location.id)
+                    onClick={async () =>{
+                       try{
+                                                                        setExpanded(isOpen ? null : location.id)
+
+                          if (isOpen)return;
+                          const busesArray = await getBuses(location.id)
+                          setBuses(busesArray)
+
+                        }catch(error){
+                          toast.error(error instanceof Error && error.message)
+                        }
+                        }
                     }
                     className="flex min-w-0 flex-1 items-center gap-3 text-left"
                   >
                     <div
                       className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${
                         location.is_active
-                          ? "border-emerald-400/15 bg-emerald-400/[0.07] text-emerald-400"
+                          ? "border-amber-400/15 bg-amber-400/[0.07] text-amber-400"
                           : "border-white/[0.08] bg-white/[0.025] text-white/30"
                       }`}
                     >
@@ -399,7 +313,7 @@ export default function AdminLocationsPage() {
                         <span
                           className={`rounded-full px-2 py-0.5 text-[10px] ${
                             location.is_active
-                              ? "bg-emerald-400/10 text-emerald-400"
+                              ? "bg-amber-400/10 text-amber-400"
                               : "bg-white/[0.06] text-white/35"
                           }`}
                         >
@@ -408,8 +322,8 @@ export default function AdminLocationsPage() {
                       </div>
 
                       <p className="mt-0.5 text-xs text-white/30">
-                        {location.buses.length}{" "}
-                        {location.buses.length === 1 ? "bus" : "buses"}
+                        {location.buses!.length}{" "}
+                        {location.buses!.length === 1 ? "bus" : "buses"}
                       </p>
                     </div>
 
@@ -423,10 +337,10 @@ export default function AdminLocationsPage() {
                   </button>
 
                   <button
-                    onClick={() => toggleLocation(location.id)}
+                    onClick={() => toggleLocation(location.id,location.is_active!)}
                     className={`relative h-6 w-10 shrink-0 rounded-full transition ${
                       location.is_active
-                        ? "bg-emerald-500"
+                        ? "bg-amber-500"
                         : "bg-white/10"
                     }`}
                     aria-label="Toggle location"
@@ -458,7 +372,7 @@ export default function AdminLocationsPage() {
                 {/* Buses */}
                 {isOpen && (
                   <div className="border-t border-white/[0.06]">
-                    {location.buses.length === 0 ? (
+                    {location.buses!.length === 0 ? (
                       <div className="px-5 py-10 text-center">
                         <p className="text-sm text-white/35">
                           No buses assigned to this location.
@@ -470,7 +384,7 @@ export default function AdminLocationsPage() {
                       </div>
                     ) : (
                       <div className="divide-y divide-white/[0.05]">
-                        {location.buses.map((bus) => (
+                        {buses.map((bus) => (
                           <div
                             key={bus.id}
                             className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center"
@@ -494,14 +408,14 @@ export default function AdminLocationsPage() {
                                   <span
                                     className={`h-1.5 w-1.5 rounded-full ${
                                       bus.is_active
-                                        ? "bg-emerald-400"
+                                        ? "bg-amber-400"
                                         : "bg-white/20"
                                     }`}
                                   />
                                 </div>
 
                                 <p className="mt-0.5 text-xs text-white/30">
-                                  {bus.plate} · Updated {bus.last_update}
+                                  {bus.plate_number} · Updated {bus.updated_at.toDateString()}
                                 </p>
                               </div>
                             </div>
@@ -572,16 +486,7 @@ export default function AdminLocationsPage() {
           location={locationModal.location}
           onClose={() => setLocationModal(null)}
           onSave={(values) => {
-            if (locationModal.mode === "add") {
-              const location: Location = {
-                id: crypto.randomUUID(),
-                name: values.name,
-                is_active: values.is_active,
-                buses: [],
-              };
-
-              setLocations((current) => [...current, location]);
-            } else if (locationModal.location) {
+            if (locationModal.location) {
               setLocations((current) =>
                 current.map((location) =>
                   location.id === locationModal.location?.id
@@ -666,7 +571,7 @@ function LocationModal({
             <input
               {...register("name")}
               placeholder="e.g. Enugu"
-              className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm outline-none transition placeholder:text-white/20 focus:border-emerald-400/40"
+              className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 text-sm outline-none transition placeholder:text-white/20 focus:border-amber-400/40"
             />
 
             {errors.name && (
@@ -687,7 +592,7 @@ function LocationModal({
             <input
               type="checkbox"
               {...register("is_active")}
-              className="h-4 w-4 accent-emerald-500"
+              className="h-4 w-4 accent-amber-500"
             />
           </label>
         </div>
@@ -757,8 +662,8 @@ function PinModal({
               {...register("pin")}
               type={showPin ? "text" : "password"}
               inputMode="numeric"
-              maxLength={4}
-              className="h-12 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 pr-12 text-lg tracking-[0.35em] outline-none focus:border-emerald-400/40"
+              maxLength={6}
+              className="h-12 w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 pr-12 text-lg tracking-[0.35em] outline-none focus:border-amber-400/40"
             />
 
             <button

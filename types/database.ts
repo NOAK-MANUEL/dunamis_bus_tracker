@@ -2,8 +2,15 @@ export type Location = {
   id: string;
   name: string;
   description: string | null;
-  created_at: string;
+  created_at?: string;
   updated_at: string;
+  is_active?:boolean;
+
+  buses?: {
+    id:string,
+    is_active: boolean
+  }[]
+
 };
 
 export type Bus = {
@@ -11,14 +18,17 @@ export type Bus = {
   name: string;
   plate_number: string;
   location_id: string;
-  pin_hash: string;
+  pin_hash?: string;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: Date;
+  updated_at: Date;
+  locations?:{
+    name:string
+  }
 };
 
 export type BusLocation = {
-  id: string;
+  id?: string;
   bus_id: string;
   latitude: number;
   longitude: number;

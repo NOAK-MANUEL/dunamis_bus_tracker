@@ -97,7 +97,7 @@ export default function HomePage() {
             </Link>*/}
 
              <Link
-              href="/admin/login"
+              href="/admin"
               className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-medium text-white transition hover:bg-white/[0.08]"
             >
               Admin
@@ -179,7 +179,18 @@ export default function HomePage() {
               </div>
             </div>
 
-            {filteredLocations.length === 0 ? (
+            {filteredLocations.length > 0 && (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredLocations.map((location) => (
+                  <LocationCard
+                    key={location.id}
+                    location={location}
+                  />
+                ))}
+              </div>
+            )}
+
+             {filteredLocations.length===0&&( locations.length === 0  ? (
               <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] py-20 text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.05] text-white/30">
                   <SearchIcon />
@@ -193,14 +204,14 @@ export default function HomePage() {
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredLocations.map((location) => (
+                {locations.map((location) => (
                   <LocationCard
                     key={location.id}
                     location={location}
                   />
                 ))}
               </div>
-            )}
+            ))}
           </div>
         </section>
 

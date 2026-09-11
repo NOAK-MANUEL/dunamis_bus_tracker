@@ -71,7 +71,7 @@ export default function DriverPage() {
   return (
     <main className="min-h-screen bg-[#07100c] text-white">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-[-300px] h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-emerald-500/[0.07] blur-[140px]" />
+        <div className="absolute left-1/2 top-[-300px] h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-amber-500/[0.07] blur-[140px]" />
       </div>
 
       <div className="relative">
@@ -79,7 +79,7 @@ export default function DriverPage() {
         <header className="border-b border-white/[0.06]">
           <div className="mx-auto flex h-20 max-w-5xl items-center justify-between px-5 sm:px-8">
             <a href="/" className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400 text-[#06100b]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 text-[#06100b]">
                 <BusIcon />
               </div>
 
@@ -107,7 +107,7 @@ export default function DriverPage() {
         {/* Page */}
         <section className="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
           <div className="max-w-2xl">
-            <p className="text-xs font-medium uppercase tracking-[0.18em] text-emerald-400/80">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-amber-400/80">
               Driver portal
             </p>
 
@@ -122,8 +122,8 @@ export default function DriverPage() {
           </div>
 
           {/* Notice */}
-          <div className="mt-9 flex gap-3 rounded-2xl border border-emerald-400/10 bg-emerald-400/[0.045] p-4">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-400/10 text-emerald-400">
+          <div className="mt-9 flex gap-3 rounded-2xl border border-amber-400/10 bg-amber-400/[0.045] p-4">
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-400/10 text-amber-400">
               <LocationIcon />
             </div>
 
@@ -159,11 +159,11 @@ export default function DriverPage() {
                   key={bus.id}
                   onClick={() => selectBus(bus)}
                   disabled={!bus.active}
-                  className="group rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 text-left transition hover:-translate-y-0.5 hover:border-emerald-400/20 hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="group rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 text-left transition hover:-translate-y-0.5 hover:border-amber-400/20 hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/[0.06] text-white/45 transition group-hover:bg-emerald-400/10 group-hover:text-emerald-400">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/[0.06] text-white/45 transition group-hover:bg-amber-400/10 group-hover:text-amber-400">
                         <BusIcon />
                       </div>
 
@@ -178,8 +178,8 @@ export default function DriverPage() {
                       </div>
                     </div>
 
-                    <span className="flex items-center gap-1.5 rounded-full bg-emerald-400/[0.07] px-2 py-1 text-[9px] text-emerald-300">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    <span className="flex items-center gap-1.5 rounded-full bg-amber-400/[0.07] px-2 py-1 text-[9px] text-amber-300">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                       Active
                     </span>
                   </div>
@@ -204,7 +204,7 @@ export default function DriverPage() {
               Don't know your bus PIN?
             </p>
 
-            <button className="mt-2 text-xs font-medium text-emerald-400/70 transition hover:text-emerald-300">
+            <button className="mt-2 text-xs font-medium text-amber-400/70 transition hover:text-amber-300">
               Contact your administrator
             </button>
           </div>
@@ -217,7 +217,7 @@ export default function DriverPage() {
           <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#0a1510] p-6 shadow-2xl shadow-black/50">
             <div className="flex items-start justify-between">
               <div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-400">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400/10 text-amber-400">
                   <LockIcon />
                 </div>
 
@@ -260,7 +260,7 @@ export default function DriverPage() {
                 className={`mt-2 h-14 w-full rounded-xl border bg-white/[0.03] px-4 text-center text-xl tracking-[0.5em] text-white outline-none transition placeholder:text-xs placeholder:tracking-normal placeholder:text-white/20 ${
                   error
                     ? "border-red-400/30 focus:border-red-400/50"
-                    : "border-white/10 focus:border-emerald-400/40"
+                    : "border-white/10 focus:border-amber-400/40"
                 }`}
               />
 
@@ -274,7 +274,7 @@ export default function DriverPage() {
             <button
               onClick={verifyPin}
               disabled={pin.length < 4}
-              className="mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-emerald-400 text-sm font-semibold text-[#06100b] transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-30"
+              className="mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-[#06100b] transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-30"
             >
               Continue
               <ArrowIcon />

@@ -78,6 +78,7 @@ export default function AdminLoginPage() {
               </label>
 
               <input
+                type="password"
                 
                 {...register("password")}
                 autoComplete="current-password"

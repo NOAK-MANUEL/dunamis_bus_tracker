@@ -1,35 +1,33 @@
 "use client"
-import { BusForm, busSchema } from "@/lib/validation";
+import {  CreateBusInput, createBusSchema } from "@/lib/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import {toast} from "react-toastify"
 import Input from "../input";
 import LoadingButton from "../loader";
-export default function AddBus({setModal}:{setModal:()=>void}){
-   const {register,formState:{errors,isSubmitting},reset,handleSubmit} = useForm<BusForm>({
-    resolver: zodResolver(busSchema),
+import { Location } from "@/types/database";
+import { addBus } from "@/actions/buses";
+export default function AddBus({setModal,locations}:{setModal:()=>void,locations:Location[]}){
+   const {register,formState:{errors,isSubmitting},reset,handleSubmit} = useForm<CreateBusInput>({
+    resolver: zodResolver(createBusSchema),
    
   });
-  const submitBus = async (data: BusForm) => {
-    console.log(data);
 
-    // Temporary loading UI until backend is connected.
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+  const submitBus = async (data: CreateBusInput) => {
+    try{
+
+      await addBus(data)
 
     toast.success("Bus added successfully");
     reset();
     setModal();
+  }catch(error){
+    toast.error(error instanceof Error && error.message)
+  }
 
     // setTimeout(() => setSuccess(""), 3000);
   };
-  const locations = [
-  { id: "1", name: "Enugu", buses: 8, live: 7 },
-  { id: "2", name: "Abuja", buses: 7, live: 6 },
-  { id: "3", name: "Nsukka", buses: 5, live: 5 },
-  { id: "4", name: "Onitsha", buses: 6, live: 5 },
-  { id: "5", name: "Lagos", buses: 5, live: 4 },
-  { id: "6", name: "Ibadan", buses: 4, live: 2 },
-];
+  
 
   return <form
                 onSubmit={handleSubmit(submitBus)}
@@ -55,7 +53,7 @@ export default function AddBus({setModal}:{setModal:()=>void}){
                   </label>
 
                   <select
-                    {...register("location")}
+                    {...register("locationId")}
                     className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-emerald-400/50"
                   >
                     <option value="" className="bg-[#0b1711]">
@@ -65,7 +63,7 @@ export default function AddBus({setModal}:{setModal:()=>void}){
                     {locations.map((location) => (
                       <option
                         key={location.id}
-                        value={location.name}
+                        value={location.id}
                         className="bg-[#0b1711]"
                       >
                         {location.name}
@@ -73,9 +71,9 @@ export default function AddBus({setModal}:{setModal:()=>void}){
                     ))}
                   </select>
 
-                  {errors.location && (
+                  {errors.locationId && (
                     <p className="mt-1.5 text-xs text-red-400">
-                      {errors.location.message}
+                      {errors.locationId.message}
                     </p>
                   )}
                 </div>
@@ -84,7 +82,7 @@ export default function AddBus({setModal}:{setModal:()=>void}){
                   label="Driver PIN"
                   type="password"
                   inputMode="numeric"
-                  maxLength={4}
+                  
                   placeholder="••••"
                   {...register("pin")}
                   error={errors.pin?.message}

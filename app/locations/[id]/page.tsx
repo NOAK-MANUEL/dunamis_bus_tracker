@@ -104,14 +104,14 @@ export default function LocationPage() {
   return (
     <div className="min-h-screen bg-[#07100c] text-white">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-[-350px] h-[650px] w-[900px] -translate-x-1/2 rounded-full bg-emerald-500/[0.07] blur-[150px]" />
+        <div className="absolute left-1/2 top-[-350px] h-[650px] w-[900px] -translate-x-1/2 rounded-full bg-amber-500/[0.07] blur-[150px]" />
       </div>
 
       <div className="relative">
         <header className="border-b border-white/[0.06]">
           <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
             <a href="/" className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400 text-[#06100b]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 text-[#06100b]">
                 <BusIcon />
               </div>
 
@@ -148,8 +148,8 @@ export default function LocationPage() {
                   {location.name}
                 </h1>
 
-                <span className="flex items-center gap-1.5 rounded-full bg-emerald-400/[0.08] px-2.5 py-1 text-[10px] font-medium text-emerald-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span className="flex items-center gap-1.5 rounded-full bg-amber-400/[0.08] px-2.5 py-1 text-[10px] font-medium text-amber-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                   {liveBuses.length} live
                 </span>
               </div>
@@ -201,13 +201,13 @@ export default function LocationPage() {
                     }}
                   >
                     {selectedBus.id === bus.id && (
-                      <span className="absolute -inset-4 animate-pulse rounded-full border border-emerald-400/25 bg-emerald-400/5" />
+                      <span className="absolute -inset-4 animate-pulse rounded-full border border-amber-400/25 bg-amber-400/5" />
                     )}
 
                     <span
                       className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#07100c] shadow-xl ${
                         bus.status === "live"
-                          ? "bg-emerald-400 text-[#06100b]"
+                          ? "bg-amber-400 text-[#06100b]"
                           : bus.status === "recent"
                             ? "bg-yellow-400 text-[#171204]"
                             : "bg-white/40 text-[#07100c]"
@@ -249,7 +249,7 @@ export default function LocationPage() {
               <div className="absolute left-4 right-4 top-4 z-10 flex items-start justify-between">
                 <div className="rounded-xl border border-white/10 bg-[#07100c]/85 px-3 py-2.5 backdrop-blur-xl">
                   <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+                    <span className="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
 
                     <span className="text-xs font-medium">
                       Live tracking
@@ -274,7 +274,7 @@ export default function LocationPage() {
               <div className="absolute bottom-4 left-4 z-10 rounded-xl border border-white/10 bg-[#07100c]/85 p-3 backdrop-blur-xl">
                 <div className="flex items-center gap-4 text-[10px] text-white/45">
                   <span className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                    <span className="h-2 w-2 rounded-full bg-amber-400" />
                     Bus
                   </span>
 
@@ -318,7 +318,7 @@ export default function LocationPage() {
                       onClick={() => setSelectedBus(bus)}
                       className={`w-full rounded-2xl border p-4 text-left transition ${
                         selected
-                          ? "border-emerald-400/20 bg-emerald-400/[0.07]"
+                          ? "border-amber-400/20 bg-amber-400/[0.07]"
                           : "border-white/[0.06] bg-white/[0.02] hover:border-white/10 hover:bg-white/[0.04]"
                       }`}
                     >
@@ -327,7 +327,7 @@ export default function LocationPage() {
                           <div
                             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
                               selected
-                                ? "bg-emerald-400 text-[#06100b]"
+                                ? "bg-amber-400 text-[#06100b]"
                                 : "bg-white/[0.06] text-white/45"
                             }`}
                           >
@@ -356,7 +356,7 @@ export default function LocationPage() {
                         <span
                           className={`text-[10px] ${
                             bus.status === "live"
-                              ? "text-emerald-300"
+                              ? "text-amber-300"
                               : bus.status === "recent"
                                 ? "text-yellow-300"
                                 : "text-white/30"
@@ -409,12 +409,12 @@ export default function LocationPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-emerald-400/[0.08] bg-emerald-400/[0.03] px-3 py-3">
+                    <div className="rounded-xl border border-amber-400/[0.08] bg-amber-400/[0.03] px-3 py-3">
                       <div className="text-[9px] text-white/25">
                         Direction
                       </div>
 
-                      <div className="mt-1 flex items-center gap-2 text-sm font-medium text-emerald-300">
+                      <div className="mt-1 flex items-center gap-2 text-sm font-medium text-amber-300">
                         <DirectionArrow
                           bearing={getBearing(
                             userLocation.latitude,
@@ -545,8 +545,8 @@ function DirectionArrow({ bearing }: { bearing: number }) {
 function Status({ status }: { status: string }) {
   if (status === "live") {
     return (
-      <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-400/[0.08] px-2 py-1 text-[9px] font-medium text-emerald-300">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+      <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-amber-400/[0.08] px-2 py-1 text-[9px] font-medium text-amber-300">
+        <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
         Live
       </span>
     );

@@ -1,5 +1,5 @@
 "use server";
-import { setAdminSession } from "@/lib/auth/session";
+import { getAdminSession, setAdminSession } from "@/lib/auth/session";
 import {createClient} from "@/lib/supabase/server"
 import { AdminForm, AdminLoginInput, adminLoginSchema, adminSchema } from "@/lib/validation";
 import bcrypt from "bcrypt"
@@ -10,7 +10,7 @@ export const loginAdmin = async(data:AdminLoginInput)=>{
 	const {email,password} = adminLoginSchema.parse(data)
 
 	const superbase = await createClient()
-	const {data:admin,error} = await superbase.from("admins").select("email,password").eq("is_active",true).eq("email",email).maybeSingle()
+	const {data:admin,error} = await superbase.from("admins").select("id,password").eq("is_active",true).eq("email",email).maybeSingle()
 
 	if (error || !admin){
 		throw new Error("Incorrect email or password")
@@ -83,5 +83,14 @@ export const countAdmin = async()=>{
 
 
 
+export const isAdmin = async()=>{
+    const admin = await getAdminSession()
+    if (!admin) return false
 
+  const supabase = await createClient()
+
+  const {data:valid} = await supabase.from("admins").select("id").eq("id",JSON.parse(admin).id).eq("is_active",true).single()
+
+  return valid
+}
 

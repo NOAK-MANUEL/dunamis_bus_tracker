@@ -219,7 +219,7 @@ export default function DriverTrackPage() {
       <header className="border-b border-white/[0.06]">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
               D
             </div>
 
@@ -232,7 +232,7 @@ export default function DriverTrackPage() {
           <span
             className={`rounded-full border px-3 py-1 text-xs ${
               busActive
-                ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
                 : "border-white/10 bg-white/[0.03] text-white/40"
             }`}
           >
@@ -243,7 +243,7 @@ export default function DriverTrackPage() {
 
       <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
         <div className="mb-8">
-          <p className="mb-2 text-sm text-emerald-400">Bus tracking</p>
+          <p className="mb-2 text-sm text-amber-400">Bus tracking</p>
 
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
             {bus.name}
@@ -271,7 +271,7 @@ export default function DriverTrackPage() {
                 <div
                   className={`h-3 w-3 rounded-full ${
                     busActive
-                      ? "bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.6)]"
+                      ? "bg-amber-400 shadow-[0_0_18px_rgba(52,211,153,0.6)]"
                       : "bg-white/20"
                   }`}
                 />
@@ -339,7 +339,7 @@ export default function DriverTrackPage() {
                 <button
                   type="button"
                   onClick={startTracking}
-                  className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-black transition hover:bg-emerald-400"
+                  className="w-full rounded-xl bg-amber-500 px-4 py-3 text-sm font-semibold text-black transition hover:bg-amber-400"
                 >
                   Set current location
                 </button>
@@ -359,7 +359,7 @@ export default function DriverTrackPage() {
                 <span className="text-white/40">GPS</span>
                 <span
                   className={
-                    location ? "text-emerald-300" : "text-white/30"
+                    location ? "text-amber-300" : "text-white/30"
                   }
                 >
                   {location ? "Available" : "Unavailable"}
@@ -384,7 +384,7 @@ export default function DriverTrackPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-5 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl border border-white/[0.08] bg-[#0b1711] p-6 shadow-2xl">
             <div className="mb-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-emerald-400">
+              <p className="text-xs uppercase tracking-[0.18em] text-amber-400">
                 Bus activity check
               </p>
 
@@ -402,7 +402,7 @@ export default function DriverTrackPage() {
               <button
                 type="button"
                 onClick={confirmStillActive}
-                className="rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-black transition hover:bg-emerald-400"
+                className="rounded-xl bg-amber-500 px-4 py-3 text-sm font-semibold text-black transition hover:bg-amber-400"
               >
                 Yes, still active
               </button>
