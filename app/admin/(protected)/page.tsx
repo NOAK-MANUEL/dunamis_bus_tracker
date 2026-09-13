@@ -83,7 +83,11 @@ useEffect(()=>{
 
      const [busArray,locationArray,adminTotal] = res
      if(busArray.length>0){
-           setBuses(busArray as Bus[])
+       const newArray = busArray.map((b) => ({
+        ...b,
+        locations: b.locations[0],
+      }));
+           setBuses(newArray as Bus[])
 
      }
 
@@ -289,7 +293,7 @@ useEffect(()=>{
                     </span>
 
                     <span className="text-xs text-white/30">
-                      {bus.updated_at}
+                      {bus.updated_at?.toISOString()}
                     </span>
                   </div>
                 </div>

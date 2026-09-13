@@ -1,26 +1,22 @@
 "use client";
 
+import { addBusLocation } from "@/actions/buses";
+import { getBus } from "@/actions/buses";
+import { Bus } from "@/types/database";
+import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 const MOVEMENT_THRESHOLD = 100; // meters
+const LOCATION_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const CHECK_INTERVAL = 30 * 60 * 1000; // 30 minutes
 
 type Coordinates = {
   latitude: number;
   longitude: number;
+  accuracy: number | null;
 };
 
-type Bus = {
-  id: string;
-  name: string;
-  plate: string;
-};
 
-const bus: Bus = {
-  id: "bus-001",
-  name: "Dunamis Bus 01",
-  plate: "ENU-482-GH",
-};
 
 function distanceBetween(a: Coordinates, b: Coordinates) {
   const R = 6371000;
@@ -43,6 +39,11 @@ function distanceBetween(a: Coordinates, b: Coordinates) {
 }
 
 export default function DriverTrackPage() {
+  const { id } = useParams();
+
+  const [bus, setBus] = useState<Bus | null>(null);
+  const [loadingBus, setLoadingBus] = useState(true);
+
   const [location, setLocation] = useState<Coordinates | null>(null);
   const [tracking, setTracking] = useState(false);
   const [locationError, setLocationError] = useState("");
@@ -53,40 +54,106 @@ export default function DriverTrackPage() {
 
   const watchId = useRef<number | null>(null);
 
-  // Last location that was used as the movement reference.
-  const lastConfirmedLocation = useRef<Coordinates | null>(null);
+  const locationTimer =
+    useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Prevent multiple 30-minute timers.
-  const checkTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const checkTimer =
+    useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Tracks whether the bus has actually moved enough.
+  const currentLocation =
+    useRef<Coordinates | null>(null);
+
+  const lastConfirmedLocation =
+    useRef<Coordinates | null>(null);
+
   const busMoved = useRef(false);
 
+  /*
+   * Get the actual bus.
+   */
+  useEffect(() => {
+    if (!id) return;
+
+    async function fetchBus() {
+      try {
+        setLoadingBus(true);
+
+        const result = await getBus(id?.toString()||"");
+
+        setBus(result as Bus);
+        setBusActive(result?.is_active ?? false);
+      } catch (error) {
+        console.error("Failed to get bus:", error);
+        setLocationError("Unable to load this bus.");
+      } finally {
+        setLoadingBus(false);
+      }
+    }
+
+    fetchBus();
+  }, [id]);
+
+  /*
+   * Save the latest GPS position.
+   */
+  async function saveBusLocation() {
+    if (!bus) return;
+
+    const current = currentLocation.current;
+
+    if (!current) return;
+
+    try {
+      await addBusLocation( bus.id,
+         current.longitude,
+       current.latitude,
+       
+        current.accuracy||0,
+      );
+
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Failed to save bus location:", error);
+    }
+  }
+
+  /*
+   * Handle every GPS update from watchPosition().
+   */
   function handlePosition(position: GeolocationPosition) {
     const newLocation: Coordinates = {
       latitude: position.coords.latitude,
       longitude: position.coords.longitude,
+      accuracy: position.coords.accuracy,
     };
+
+    currentLocation.current = newLocation;
 
     setLocation(newLocation);
     setLocationError("");
-    setLastUpdated(new Date());
 
     /*
-     * First location:
-     * We cannot determine movement yet.
+     * First valid GPS location.
      */
     if (!lastConfirmedLocation.current) {
       lastConfirmedLocation.current = newLocation;
+
       busMoved.current = false;
 
       setBusActive(true);
+
+      /*
+       * Save immediately instead of waiting
+       * for the first 5-minute interval.
+       */
+      void saveBusLocation();
+
       return;
     }
 
     /*
-     * Compare the new GPS location with the previous
-     * confirmed location.
+     * Check how far the bus has moved from
+     * the last confirmed location.
      */
     const distance = distanceBetween(
       lastConfirmedLocation.current,
@@ -94,16 +161,19 @@ export default function DriverTrackPage() {
     );
 
     /*
-     * Ignore GPS jitter.
-     * Only consider the bus moved when it has moved
-     * at least 100 meters.
+     * Ignore small GPS jitter.
      */
     if (distance >= MOVEMENT_THRESHOLD) {
       busMoved.current = true;
     }
   }
 
-  function handleLocationError(error: GeolocationPositionError) {
+  /*
+   * GPS failure means the bus cannot remain active.
+   */
+  function handleLocationError(
+    error: GeolocationPositionError
+  ) {
     setLocationError(
       error.code === error.PERMISSION_DENIED
         ? "Location permission was denied. You cannot activate this bus without location access."
@@ -114,41 +184,83 @@ export default function DriverTrackPage() {
     setBusActive(false);
     setLocation(null);
 
+    currentLocation.current = null;
+
     if (watchId.current !== null) {
-      navigator.geolocation.clearWatch(watchId.current);
+      navigator.geolocation.clearWatch(
+        watchId.current
+      );
+
       watchId.current = null;
+    }
+
+    if (locationTimer.current !== null) {
+      clearInterval(locationTimer.current);
+
+      locationTimer.current = null;
+    }
+
+    if (checkTimer.current !== null) {
+      clearInterval(checkTimer.current);
+
+      checkTimer.current = null;
     }
   }
 
+  /*
+   * Start tracking.
+   */
   function startTracking() {
+    if (!bus) return;
+
     if (!("geolocation" in navigator)) {
       setLocationError(
         "Geolocation is not available on this device. You cannot activate this bus."
       );
+
       setBusActive(false);
+
+      return;
+    }
+
+    /*
+     * Prevent duplicate watchers/timers.
+     */
+    if (watchId.current !== null) {
       return;
     }
 
     setLocationError("");
 
     /*
-     * Start continuous location tracking.
+     * Continuously monitor driver's GPS.
      */
-    watchId.current = navigator.geolocation.watchPosition(
-      handlePosition,
-      handleLocationError,
-      {
-        enableHighAccuracy: true,
-        maximumAge: 10_000,
-        timeout: 15_000,
-      }
-    );
+    watchId.current =
+      navigator.geolocation.watchPosition(
+        handlePosition,
+        handleLocationError,
+        {
+          enableHighAccuracy: true,
+          maximumAge: 10_000,
+          timeout: 15_000,
+        }
+      );
 
     setTracking(true);
 
     /*
-     * Every 30 minutes check whether the bus has
-     * actually moved.
+     * Save the latest location every 5 minutes.
+     *
+     * This is completely separate from the
+     * 30-minute activity check.
+     */
+    locationTimer.current = setInterval(() => {
+      void saveBusLocation();
+    }, LOCATION_INTERVAL);
+
+    /*
+     * Every 30 minutes check whether the bus
+     * has actually moved at least 100m.
      */
     checkTimer.current = setInterval(() => {
       if (busMoved.current) {
@@ -157,55 +269,89 @@ export default function DriverTrackPage() {
     }, CHECK_INTERVAL);
   }
 
+  /*
+   * Stop tracking.
+   */
   function stopTracking() {
     if (watchId.current !== null) {
-      navigator.geolocation.clearWatch(watchId.current);
+      navigator.geolocation.clearWatch(
+        watchId.current
+      );
+
       watchId.current = null;
+    }
+
+    if (locationTimer.current !== null) {
+      clearInterval(locationTimer.current);
+
+      locationTimer.current = null;
     }
 
     if (checkTimer.current !== null) {
       clearInterval(checkTimer.current);
+
       checkTimer.current = null;
     }
 
     setTracking(false);
     setBusActive(false);
+
+    busMoved.current = false;
   }
 
+  /*
+   * Driver confirms the bus is still active.
+   */
   function confirmStillActive() {
-    if (!location) {
+    const current = currentLocation.current;
+
+    if (!current) {
       setBusActive(false);
       setShowActivePopup(false);
+
       return;
     }
 
     /*
-     * This location becomes the new reference point.
+     * Current GPS position becomes the new
+     * movement reference point.
      */
-    lastConfirmedLocation.current = location;
+    lastConfirmedLocation.current = current;
 
     busMoved.current = false;
 
     setBusActive(true);
     setShowActivePopup(false);
-    setLastUpdated(new Date());
+
+    /*
+     * Save the confirmed position immediately.
+     */
+    void saveBusLocation();
   }
 
+  /*
+   * Driver says the bus is no longer active.
+   */
   function markInactive() {
     setBusActive(false);
     setShowActivePopup(false);
 
-    /*
-     * Stop watching because the driver said
-     * the bus is no longer active.
-     */
     stopTracking();
   }
 
+  /*
+   * Cleanup.
+   */
   useEffect(() => {
     return () => {
       if (watchId.current !== null) {
-        navigator.geolocation.clearWatch(watchId.current);
+        navigator.geolocation.clearWatch(
+          watchId.current
+        );
+      }
+
+      if (locationTimer.current !== null) {
+        clearInterval(locationTimer.current);
       }
 
       if (checkTimer.current !== null) {
@@ -213,6 +359,38 @@ export default function DriverTrackPage() {
       }
     };
   }, []);
+
+  /*
+   * Loading bus.
+   */
+  if (loadingBus) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#07100c] text-white">
+        <div className="text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-amber-400" />
+
+          <p className="mt-4 text-sm text-white/40">
+            Loading bus...
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  /*
+   * Bus wasn't found.
+   */
+  if (!bus) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#07100c] px-5 text-white">
+        <div className="w-full max-w-md rounded-3xl border border-white/[0.07] bg-white/[0.025] p-8 text-center">
+          <p className="text-sm text-red-300">
+            Unable to find this bus.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#07100c] text-white">
@@ -224,8 +402,13 @@ export default function DriverTrackPage() {
             </div>
 
             <div>
-              <p className="text-sm font-semibold">Dunamis Bus Tracker</p>
-              <p className="text-xs text-white/40">Driver Portal</p>
+              <p className="text-sm font-semibold">
+                Dunamis Bus Tracker
+              </p>
+
+              <p className="text-xs text-white/40">
+                Driver Portal
+              </p>
             </div>
           </div>
 
@@ -243,20 +426,24 @@ export default function DriverTrackPage() {
 
       <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
         <div className="mb-8">
-          <p className="mb-2 text-sm text-amber-400">Bus tracking</p>
+          <p className="mb-2 text-sm text-amber-400">
+            Bus tracking
+          </p>
 
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
             {bus.name}
           </h1>
 
           <p className="mt-2 text-sm text-white/40">
-            Plate number: {bus.plate}
+            Plate number: {bus.plate_number}
           </p>
         </div>
 
         {locationError && (
           <div className="mb-6 rounded-2xl border border-red-400/20 bg-red-400/[0.06] p-4">
-            <p className="text-sm text-red-300">{locationError}</p>
+            <p className="text-sm text-red-300">
+              {locationError}
+            </p>
           </div>
         )}
 
@@ -271,7 +458,7 @@ export default function DriverTrackPage() {
                 <div
                   className={`h-3 w-3 rounded-full ${
                     busActive
-                      ? "bg-amber-400 shadow-[0_0_18px_rgba(52,211,153,0.6)]"
+                      ? "bg-amber-400 shadow-[0_0_18px_rgba(251,191,36,0.6)]"
                       : "bg-white/20"
                   }`}
                 />
@@ -292,10 +479,13 @@ export default function DriverTrackPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/[0.06] bg-black/10 p-4">
-                <p className="text-xs text-white/30">Latitude</p>
-                <p className="mt-2 text-sm font-medium">
+                <p className="text-xs text-white/30">
+                  Latitude
+                </p>
+
+                <p className="mt-2 font-mono text-sm font-medium">
                   {location
                     ? location.latitude.toFixed(6)
                     : "Waiting for location"}
@@ -303,18 +493,35 @@ export default function DriverTrackPage() {
               </div>
 
               <div className="rounded-2xl border border-white/[0.06] bg-black/10 p-4">
-                <p className="text-xs text-white/30">Longitude</p>
-                <p className="mt-2 text-sm font-medium">
+                <p className="text-xs text-white/30">
+                  Longitude
+                </p>
+
+                <p className="mt-2 font-mono text-sm font-medium">
                   {location
                     ? location.longitude.toFixed(6)
                     : "Waiting for location"}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/[0.06] bg-black/10 p-4">
+                <p className="text-xs text-white/30">
+                  Accuracy
+                </p>
+
+                <p className="mt-2 text-sm font-medium">
+                  {location?.accuracy != null
+                    ? `${Math.round(
+                        location.accuracy
+                      )} m`
+                    : "—"}
                 </p>
               </div>
             </div>
 
             {lastUpdated && (
               <p className="mt-5 text-xs text-white/30">
-                Last location update:{" "}
+                Last location saved:{" "}
                 {lastUpdated.toLocaleTimeString()}
               </p>
             )}
@@ -326,12 +533,14 @@ export default function DriverTrackPage() {
             </p>
 
             <h2 className="mt-3 text-xl font-medium">
-              {tracking ? "Location tracking enabled" : "Ready to track"}
+              {tracking
+                ? "Location tracking enabled"
+                : "Ready to track"}
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-white/40">
-              Your device location is required before this bus can be marked
-              active.
+              Your device location is required before this
+              bus can be marked active.
             </p>
 
             <div className="mt-6">
@@ -356,10 +565,15 @@ export default function DriverTrackPage() {
 
             <div className="mt-6 border-t border-white/[0.06] pt-5">
               <div className="flex justify-between text-sm">
-                <span className="text-white/40">GPS</span>
+                <span className="text-white/40">
+                  GPS
+                </span>
+
                 <span
                   className={
-                    location ? "text-amber-300" : "text-white/30"
+                    location
+                      ? "text-amber-300"
+                      : "text-white/30"
                   }
                 >
                   {location ? "Available" : "Unavailable"}
@@ -367,13 +581,39 @@ export default function DriverTrackPage() {
               </div>
 
               <div className="mt-3 flex justify-between text-sm">
-                <span className="text-white/40">Tracking</span>
-                <span>{tracking ? "On" : "Off"}</span>
+                <span className="text-white/40">
+                  Tracking
+                </span>
+
+                <span>
+                  {tracking ? "On" : "Off"}
+                </span>
               </div>
 
               <div className="mt-3 flex justify-between text-sm">
-                <span className="text-white/40">Bus status</span>
-                <span>{busActive ? "Active" : "Inactive"}</span>
+                <span className="text-white/40">
+                  Location sync
+                </span>
+
+                <span>Every 5 min</span>
+              </div>
+
+              <div className="mt-3 flex justify-between text-sm">
+                <span className="text-white/40">
+                  Activity check
+                </span>
+
+                <span>Every 30 min</span>
+              </div>
+
+              <div className="mt-3 flex justify-between text-sm">
+                <span className="text-white/40">
+                  Bus status
+                </span>
+
+                <span>
+                  {busActive ? "Active" : "Inactive"}
+                </span>
               </div>
             </div>
           </aside>
@@ -393,8 +633,9 @@ export default function DriverTrackPage() {
               </h2>
 
               <p className="mt-3 text-sm leading-6 text-white/40">
-                The bus has moved since the last activity check. Please
-                confirm that you are still operating this bus.
+                The bus has moved since the last activity
+                check. Please confirm that you are still
+                operating this bus.
               </p>
             </div>
 

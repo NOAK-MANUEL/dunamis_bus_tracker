@@ -78,7 +78,7 @@ export default function LocationPage() {
 
 
 
-    navigator.geolocation.getCurrentPosition(
+    navigator.geolocation.watchPosition(
       (position) => {
         setUserLocation({
           latitude: position.coords.latitude,
@@ -93,13 +93,41 @@ export default function LocationPage() {
       }
     );
 
-    getBusesLocation(id?.toString()).then(busArray=> {
-      const newArray = Array.from(busArray.filter(b=>b.bus_locations[0].latitude && b.bus_locations[0].longitude)).map(b=>{return{...b, bus_locations: b.bus_locations[0]}})
-      setBuses(newArray as Bus[])
-    }).catch(()=>toast.error("something went wrong"))
+   
 
     getLocation(id!.toString()).then(loc=> setLocation(loc as Location)).catch(()=>toast.error("Couldn't get location")) 
   }, []);
+
+  useEffect(() => {
+  const fetchBuses = async () => {
+    try {
+      const busArray = await getBusesLocation(id?.toString());
+
+      const newArray = Array.from(
+        busArray.filter(
+          (b) =>
+            b.bus_locations[0]?.latitude &&
+            b.bus_locations[0]?.longitude
+        )
+      ).map((b) => ({
+        ...b,
+        bus_locations: b.bus_locations[0],
+      }));
+
+      setBuses(newArray as Bus[]);
+    } catch {
+      toast.error("Something went wrong");
+    }
+  };
+
+  fetchBuses();
+
+  const interval = setInterval(() => {
+    fetchBuses();
+  }, 5 * 60 * 1000);
+
+  return () => clearInterval(interval);
+}, [id]);
 
   const distance = userLocation
     ? distanceBetween(

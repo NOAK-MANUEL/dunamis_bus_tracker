@@ -5,7 +5,7 @@ import { CreateBusInput, createBusSchema } from "@/lib/validation";
 import {  isAdmin } from "./admin";
 import { getDefaultSession, setDefaultSession, setDriverSession } from "@/lib/auth/session";
 
-export async function adminGetBuses(location_id?:string){
+export async function getAdminBuses(location_id?:string){
 	const admin = await isAdmin()
 	if(!admin){
 		throw new Error("No admin detail found")
@@ -41,6 +41,21 @@ export async function getBuses(location_id?:string){
   return buses;
 }
 
+export async function getBus(id:string){
+	const supabase = await createClient()
+
+	
+	const {data:bus,error} = await  supabase.from("buses").select("id,plate_number,name,is_active,id").eq("id",id).single();
+ 
+
+	if (error) {
+    throw new Error(error.message);
+  }
+
+  return bus;
+}
+
+
 export async function getBusesLocation(location_id?:string){
 	const supabase = await createClient()
 
@@ -57,7 +72,33 @@ export async function getBusesLocation(location_id?:string){
   return buses;
 }
 
+export async function addBusLocation(bus_id: string, longitude:number, latitude: number, accuracy:number){
+	const isValid = await getDefaultSession(bus_id)
+	if(!isValid){
+		throw new Error("Not logged In")
+	}
+	const supabase = await createClient()
+
+	
+	let {data:bus,error} = await supabase.from("bus_locations").select("id").eq("bus_id", bus_id).single();
+
+	if (error){
+		throw new Error("Sorry, unable to get location: "+error.message+"\n Please contact the admin")
+	}
+
+	if(bus ){
+		await supabase.from("bus_locations").update({longitude, latitude, accuracy, recorded_at: Date.now()}).eq("bus_id", bus_id);
+	}else {
+				await supabase.from("bus_locations").update({longitude, latitude, accuracy, recorded_at: Date.now()}).eq("bus_id", bus_id);
+
+	}
+
+  
+}
+
+
 export async function addBus(data:CreateBusInput){
+	
 
 	const {pin,name,plateNumber,locationId}= createBusSchema.parse(data);
 		const admin = await isAdmin()
@@ -132,7 +173,8 @@ export async function logDriverIn(bus_id:string,pin: string){
 
 		const supabase = await createClient()
 
-		const bus= await supabase.from("buses").select("id").eq("id",bus_id).eq("pin_hash",pin).single()
+		const {data:bus}= await supabase.from("buses").select("id").eq("id",bus_id).eq("pin_hash",pin).single()
+
 
 		await setDefaultSession(bus_id,JSON.stringify({count:session?.count+1},))
 		if(!bus) throw new Error("Incorrect pin");

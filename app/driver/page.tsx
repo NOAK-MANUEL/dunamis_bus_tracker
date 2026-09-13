@@ -33,7 +33,14 @@ export default function DriverPage() {
   }
 
   useEffect(()=>{
-    getBuses().then(busArray=> setBuses(busArray as Bus[])).catch(err=>toast.error(err.message))
+    getBuses().then(busArray=> {
+
+      const newArray = busArray.map((b) => ({
+        ...b,
+        locations: b.locations[0],
+      }));
+      setBuses(newArray as Bus[])
+    }).catch(err=>toast.error(err.message))
   },[])
 
   async function verifyPin() {
@@ -47,7 +54,7 @@ export default function DriverPage() {
     try{
       await logDriverIn(selectedBus.id,pin)
 
-      router.push("track")
+      router.push("track/"+selectedBus.id)
 
       }catch(error){
             setError(error instanceof Error ? error.message:"");
@@ -177,7 +184,7 @@ export default function DriverPage() {
                     </span>
 
                     <span className="text-[10px] text-white/25">
-                      Updated {bus.updated_at.toString()}
+                      Updated {bus?.updated_at?.toString()}
                     </span>
                   </div>
                 </button>
