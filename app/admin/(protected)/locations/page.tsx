@@ -10,7 +10,7 @@ import LoadingButton from "@/components/loader";
 import { Bus, Location } from "@/types/database";
 import { adminLocationSetActive, getAllLocations } from "@/actions/location";
 import { toast } from "react-toastify";
-import { adminChangeBusPin, adminDeleteBus, getBuses } from "@/actions/buses";
+import { adminChangeBusPin, adminDeleteBus, getAdminBuses } from "@/actions/buses";
 
 const locationSchema = z.object({
   name: z
@@ -86,10 +86,10 @@ export default function AdminLocationsPage() {
     );
   }, [locations, search]);
 
-  const totalBuses = locations.reduce(
-    (total, location) => total + location.buses!.length,
-    0
-  );
+  // const totalBuses = locations.reduce(
+  //   (total, location) => total + location.buses!.length,
+  //   0
+  // );
 
 
 
@@ -281,7 +281,7 @@ export default function AdminLocationsPage() {
                                                                         setExpanded(isOpen ? null : location.id)
 
                           if (isOpen)return;
-                          const busesArray = await getBuses(location.id)
+                          const busesArray = await getAdminBuses(location.id)
                           setBuses(busesArray)
 
                         }catch(error){
@@ -415,7 +415,7 @@ export default function AdminLocationsPage() {
                                 </div>
 
                                 <p className="mt-0.5 text-xs text-white/30">
-                                  {bus.plate_number} · Updated {bus.updated_at.toDateString()}
+                                  {bus.plate_number} · Updated {bus?.updated_at?.toISOString()}
                                 </p>
                               </div>
                             </div>
@@ -631,7 +631,7 @@ function PinModal({
   } = useForm<BusPinForm>({
     resolver: zodResolver(busPinSchema),
     defaultValues: {
-      pin: bus.pin,
+      pin: bus.pin_hash,
     },
   });
 
@@ -650,7 +650,7 @@ function PinModal({
         <div className="p-5">
           <div className="mb-5 rounded-xl border border-white/[0.07] bg-white/[0.02] p-4">
             <p className="text-sm font-medium">{bus.name}</p>
-            <p className="mt-1 text-xs text-white/30">{bus.plate}</p>
+            <p className="mt-1 text-xs text-white/30">{bus.plate_number}</p>
           </div>
 
           <label className="mb-2 block text-xs font-medium text-white/50">
@@ -744,7 +744,7 @@ function DeleteBusModal({
         <div className="p-5">
           <div className="rounded-xl border border-red-400/10 bg-red-400/[0.04] p-4">
             <p className="text-sm font-medium text-white">{bus.name}</p>
-            <p className="mt-1 text-xs text-white/30">{bus.plate}</p>
+            <p className="mt-1 text-xs text-white/30">{bus.plate_number}</p>
           </div>
 
           <p className="mt-5 text-sm leading-6 text-white/45">

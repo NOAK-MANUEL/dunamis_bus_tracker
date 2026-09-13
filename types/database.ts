@@ -1,9 +1,10 @@
 export type Location = {
   id: string;
   name: string;
-  description: string | null;
+  description?: string | null;
   created_at?: string;
-  updated_at: string;
+  updated_at?: string;
+  region?: string;
   is_active?:boolean;
 
   buses?: {
@@ -17,19 +18,21 @@ export type Bus = {
   id: string;
   name: string;
   plate_number: string;
-  location_id: string;
+  location_id?: string;
   pin_hash?: string;
   is_active: boolean;
   created_at?: Date;
-  updated_at: Date;
+  updated_at?: Date;
   locations?:{
     name:string
   }
+
+  bus_location?: BusLocation
 };
 
 export type BusLocation = {
   id?: string;
-  bus_id: string;
+  bus_id?: string;
   latitude: number;
   longitude: number;
   accuracy: number | null;

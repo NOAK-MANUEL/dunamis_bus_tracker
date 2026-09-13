@@ -2,52 +2,57 @@
 
 "use client";
 
+import { getBusesLocation } from "@/actions/buses";
+import { getLocation } from "@/actions/location";
+import { Bus, Location } from "@/types/database";
+import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 
-const location = {
-  name: "Enugu",
-  region: "Enugu State",
-  updated: "2 minutes ago",
-};
+// const location = {
+//   name: "Enugu",
+//   region: "Enugu State",
+//   updated: "2 minutes ago",
+// };
 
-const buses = [
-  {
-    id: "bus-01",
-    name: "Dunamis Bus 01",
-    plate: "ENU-482-GH",
-    status: "live",
-    updated: "2 min ago",
-    latitude: 6.4584,
-    longitude: 7.5464,
-  },
-  {
-    id: "bus-02",
-    name: "Dunamis Bus 02",
-    plate: "ENU-731-KD",
-    status: "live",
-    updated: "4 min ago",
-    latitude: 6.4701,
-    longitude: 7.5237,
-  },
-  {
-    id: "bus-03",
-    name: "Dunamis Bus 03",
-    plate: "ENU-218-AB",
-    status: "recent",
-    updated: "9 min ago",
-    latitude: 6.4412,
-    longitude: 7.4981,
-  },
-  {
-    id: "bus-04",
-    name: "Dunamis Bus 04",
-    plate: "ENU-905-XM",
-    status: "stale",
-    updated: "27 min ago",
-    latitude: 6.491,
-    longitude: 7.551,
-  },
-];
+// const buses = [
+//   {
+//     id: "bus-01",
+//     name: "Dunamis Bus 01",
+//     plate: "ENU-482-GH",
+//     status: "live",
+//     updated: "2 min ago",
+//     latitude: 6.4584,
+//     longitude: 7.5464,
+//   },
+//   {
+//     id: "bus-02",
+//     name: "Dunamis Bus 02",
+//     plate: "ENU-731-KD",
+//     status: "live",
+//     updated: "4 min ago",
+//     latitude: 6.4701,
+//     longitude: 7.5237,
+//   },
+//   {
+//     id: "bus-03",
+//     name: "Dunamis Bus 03",
+//     plate: "ENU-218-AB",
+//     status: "recent",
+//     updated: "9 min ago",
+//     latitude: 6.4412,
+//     longitude: 7.4981,
+//   },
+//   {
+//     id: "bus-04",
+//     name: "Dunamis Bus 04",
+//     plate: "ENU-905-XM",
+//     status: "stale",
+//     updated: "27 min ago",
+//     latitude: 6.491,
+//     longitude: 7.551,
+//   },
+// ];
 
 type UserLocation = {
   latitude: number;
@@ -55,17 +60,23 @@ type UserLocation = {
 };
 
 export default function LocationPage() {
+  const [buses,setBuses] = useState<Bus[]>([])
   const [selectedBus, setSelectedBus] = useState(buses[0]);
+    const [location,setLocation] = useState<Location>()
+
   const [showDetails, setShowDetails] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const {id} = useParams()
 
   const liveBuses = useMemo(
-    () => buses.filter((bus) => bus.status === "live"),
+    () => buses.filter((bus) => bus.is_active ),
     []
   );
 
   useEffect(() => {
     if (!navigator.geolocation) return;
+
+
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -81,14 +92,21 @@ export default function LocationPage() {
         maximumAge: 30000,
       }
     );
+
+    getBusesLocation(id?.toString()).then(busArray=> {
+      const newArray = Array.from(busArray.filter(b=>b.bus_locations[0].latitude && b.bus_locations[0].longitude)).map(b=>{return{...b, bus_locations: b.bus_locations[0]}})
+      setBuses(newArray as Bus[])
+    }).catch(()=>toast.error("something went wrong"))
+
+    getLocation(id!.toString()).then(loc=> setLocation(loc as Location)).catch(()=>toast.error("Couldn't get location")) 
   }, []);
 
   const distance = userLocation
     ? distanceBetween(
         userLocation.latitude,
         userLocation.longitude,
-        selectedBus.latitude,
-        selectedBus.longitude
+        selectedBus?.bus_location?.latitude || 0,
+        selectedBus?.bus_location?.longitude ||0
       )
     : null;
 
@@ -96,8 +114,8 @@ export default function LocationPage() {
     ? getDirection(
         userLocation.latitude,
         userLocation.longitude,
-        selectedBus.latitude,
-        selectedBus.longitude
+        selectedBus?.bus_location?.latitude || 0,
+        selectedBus?.bus_location?.longitude ||0
       )
     : null;
 
@@ -145,7 +163,7 @@ export default function LocationPage() {
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                  {location.name}
+                  {location?.name}
                 </h1>
 
                 <span className="flex items-center gap-1.5 rounded-full bg-amber-400/[0.08] px-2.5 py-1 text-[10px] font-medium text-amber-300">
@@ -155,7 +173,7 @@ export default function LocationPage() {
               </div>
 
               <p className="mt-2 text-sm text-white/35">
-                {location.region} · {buses.length} buses
+                {location?.region} · {buses.length} buses
               </p>
             </div>
 
@@ -165,7 +183,7 @@ export default function LocationPage() {
               </div>
 
               <div className="mt-1 text-xs text-white/45">
-                {location.updated}
+                {location?.updated_at}
               </div>
             </div>
           </div>
@@ -206,11 +224,9 @@ export default function LocationPage() {
 
                     <span
                       className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#07100c] shadow-xl ${
-                        bus.status === "live"
+                        bus.is_active
                           ? "bg-amber-400 text-[#06100b]"
-                          : bus.status === "recent"
-                            ? "bg-yellow-400 text-[#171204]"
-                            : "bg-white/40 text-[#07100c]"
+                                 : "bg-white/40 text-[#07100c]"
                       }`}
                     >
                       <BusIcon />
@@ -340,12 +356,12 @@ export default function LocationPage() {
                             </div>
 
                             <div className="mt-1 text-[10px] text-white/25">
-                              {bus.plate}
+                              {bus.plate_number}
                             </div>
                           </div>
                         </div>
 
-                        <Status status={bus.status} />
+                        <Status status={bus.is_active} />
                       </div>
 
                       <div className="mt-4 flex items-center justify-between border-t border-white/[0.05] pt-3">
@@ -355,14 +371,13 @@ export default function LocationPage() {
 
                         <span
                           className={`text-[10px] ${
-                            bus.status === "live"
+                            bus.is_active
                               ? "text-amber-300"
-                              : bus.status === "recent"
-                                ? "text-yellow-300"
+                              
                                 : "text-white/30"
                           }`}
                         >
-                          {bus.updated}
+                          {bus?.updated_at?.toISOString()}
                         </span>
                       </div>
                     </button>
@@ -382,18 +397,18 @@ export default function LocationPage() {
                     </p>
                   </div>
 
-                  <Status status={selectedBus.status} />
+                  <Status status={selectedBus.is_active} />
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <InfoBox
                     label="Latitude"
-                    value={selectedBus.latitude.toFixed(5)}
+                    value={selectedBus.bus_location!.latitude.toFixed(5)}
                   />
 
                   <InfoBox
                     label="Longitude"
-                    value={selectedBus.longitude.toFixed(5)}
+                    value={selectedBus.bus_location!.longitude.toFixed(5)}
                   />
                 </div>
 
@@ -419,8 +434,8 @@ export default function LocationPage() {
                           bearing={getBearing(
                             userLocation.latitude,
                             userLocation.longitude,
-                            selectedBus.latitude,
-                            selectedBus.longitude
+                            selectedBus.bus_location!.latitude,
+                            selectedBus.bus_location!.longitude
                           )}
                         />
                         {direction}
@@ -542,8 +557,8 @@ function DirectionArrow({ bearing }: { bearing: number }) {
   );
 }
 
-function Status({ status }: { status: string }) {
-  if (status === "live") {
+function Status({ status }: { status: boolean }) {
+  if (status ) {
     return (
       <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-amber-400/[0.08] px-2 py-1 text-[9px] font-medium text-amber-300">
         <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
@@ -552,19 +567,19 @@ function Status({ status }: { status: string }) {
     );
   }
 
-  if (status === "recent") {
-    return (
-      <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-yellow-400/[0.08] px-2 py-1 text-[9px] font-medium text-yellow-300">
-        <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
-        Recent
-      </span>
-    );
-  }
+  // if (status === "recent") {
+  //   return (
+  //     <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-yellow-400/[0.08] px-2 py-1 text-[9px] font-medium text-yellow-300">
+  //       <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
+  //       Recent
+  //     </span>
+  //   );
+  // }
 
   return (
     <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/[0.06] px-2 py-1 text-[9px] font-medium text-white/35">
       <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
-      Stale
+      Not Active
     </span>
   );
 }

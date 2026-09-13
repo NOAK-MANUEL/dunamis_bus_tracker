@@ -2,47 +2,22 @@
 
 "use client";
 
-import { useState } from "react";
+import { getBuses, logDriverIn } from "@/actions/buses";
+import { Bus } from "@/types/database";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
-const buses = [
-  {
-    id: "bus-01",
-    name: "Dunamis Bus 01",
-    plate: "ENU-482-GH",
-    location: "Enugu",
-    lastUpdated: "2 min ago",
-    active: true,
-  },
-  {
-    id: "bus-02",
-    name: "Dunamis Bus 02",
-    plate: "ENU-731-KD",
-    location: "Enugu",
-    lastUpdated: "4 min ago",
-    active: true,
-  },
-  {
-    id: "bus-03",
-    name: "Dunamis Bus 03",
-    plate: "ABJ-218-AB",
-    location: "Abuja",
-    lastUpdated: "12 min ago",
-    active: true,
-  },
-  {
-    id: "bus-04",
-    name: "Dunamis Bus 04",
-    plate: "NSK-905-XM",
-    location: "Nsukka",
-    lastUpdated: "31 min ago",
-    active: true,
-  },
-];
+
 
 export default function DriverPage() {
+  const router = useRouter()
   const [selectedBus, setSelectedBus] = useState<
-    (typeof buses)[number] | null
+    Bus| null
   >(null);
+   const [buses, setBuses] = useState<
+    Bus[]
+  >([]);
 
   const [pinOpen, setPinOpen] = useState(false);
 
@@ -50,22 +25,34 @@ export default function DriverPage() {
 
   const [error, setError] = useState("");
 
-  function selectBus(bus: (typeof buses)[number]) {
+  function selectBus(bus: Bus) {
     setSelectedBus(bus);
     setPin("");
     setError("");
     setPinOpen(true);
   }
 
-  function verifyPin() {
-    if (pin === "1234") {
-      setPinOpen(false);
-      setPin("");
-      setError("");
-      return;
-    }
+  useEffect(()=>{
+    getBuses().then(busArray=> setBuses(busArray as Bus[])).catch(err=>toast.error(err.message))
+  },[])
 
-    setError("Incorrect PIN. Please try again.");
+  async function verifyPin() {
+    // if (pin === "1234") {
+    //   setPinOpen(false);
+    //   setPin("");
+    //   setError("");
+    //   return;
+    // }
+    if(!selectedBus) return
+    try{
+      await logDriverIn(selectedBus.id,pin)
+
+      router.push("track")
+
+      }catch(error){
+            setError(error instanceof Error ? error.message:"");
+
+      }
   }
 
   return (
@@ -158,7 +145,7 @@ export default function DriverPage() {
                 <button
                   key={bus.id}
                   onClick={() => selectBus(bus)}
-                  disabled={!bus.active}
+                  disabled={bus.is_active}
                   className="group rounded-2xl border border-white/[0.07] bg-white/[0.025] p-5 text-left transition hover:-translate-y-0.5 hover:border-amber-400/20 hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -173,7 +160,7 @@ export default function DriverPage() {
                         </h3>
 
                         <p className="mt-1 font-mono text-[10px] text-white/25">
-                          {bus.plate}
+                          {bus.plate_number}
                         </p>
                       </div>
                     </div>
@@ -186,11 +173,11 @@ export default function DriverPage() {
 
                   <div className="mt-5 flex items-center justify-between border-t border-white/[0.05] pt-3">
                     <span className="text-[10px] text-white/25">
-                      {bus.location}
+                      {bus.locations?.name}
                     </span>
 
                     <span className="text-[10px] text-white/25">
-                      Updated {bus.lastUpdated}
+                      Updated {bus.updated_at.toString()}
                     </span>
                   </div>
                 </button>
@@ -226,7 +213,7 @@ export default function DriverPage() {
                 </h2>
 
                 <p className="mt-1 text-xs text-white/30">
-                  {selectedBus.name} · {selectedBus.plate}
+                  {selectedBus.name} · {selectedBus.plate_number}
                 </p>
               </div>
 

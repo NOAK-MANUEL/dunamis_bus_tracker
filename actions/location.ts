@@ -19,6 +19,10 @@ export const addLocation = async (data:CreateLocationInput )=>{
 }
 
 export const getAllLocations = async ( )=>{
+	const admin = isAdmin()
+	if (!admin){
+		throw new Error("No admin detail found")
+	}
 	const supabase = await createClient()
 	const {data:locations,error} = await supabase.from("locations").select("id,name,is_active,buses (id,is_active)").order("name",{ascending:true})
 	if (error){
@@ -36,6 +40,17 @@ export const getLocations = async ( )=>{
 	}
 
 	return locations
+}
+
+export const getLocation = async ( id: string)=>{
+	const supabase = await createClient()
+	const {data:location,error} = await supabase.from("locations").select("id,name,updated_at,region").eq("is_active",true).eq("id",id).single()
+	if (error){
+		throw new Error(error.message)
+	}
+
+
+	return location
 }
 
 export const searchLocation = async (locationName:string)=>{
