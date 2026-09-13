@@ -27,7 +27,7 @@ export type Bus = {
     name:string
   }
 
-  bus_location?: BusLocation
+  bus_locations?: BusLocation
 };
 
 export type BusLocation = {
