@@ -59,7 +59,7 @@ export async function getBus(id:string){
 export async function getBusesLocation(location_id?:string){
 	const supabase = await createClient()
 
-	let query =  supabase.from("buses").select("id,plate_number,name,is_active, bus_locations (longitude,latitude,accuracy,recorded_at)").order("recorded_at",{ascending:false});
+	let query =  supabase.from("buses").select("id,plate_number,name,is_active,updated_at,bus_locations (longitude,latitude,accuracy,recorded_at)").order("updated_at",{ascending:false});
 	if (location_id){
 		query = query.eq("location_id",location_id)
 	}
@@ -72,30 +72,74 @@ export async function getBusesLocation(location_id?:string){
   return buses;
 }
 
-export async function addBusLocation(bus_id: string, longitude:number, latitude: number, accuracy:number){
-	const isValid = await getDefaultSession(bus_id)
-	if(!isValid){
-		throw new Error("Not logged In")
-	}
-	const supabase = await createClient()
+export async function addBusLocation(
+  bus_id: string,
+  longitude: number,
+  latitude: number,
+  accuracy: number
+) {
+  const isValid = await getDefaultSession(bus_id);
 
-	
-	let {data:bus,error} = await supabase.from("bus_locations").select("id").eq("bus_id", bus_id).single();
+  if (!isValid) {
+    throw new Error("Not logged In");
+  }
 
-	if (error){
-		throw new Error("Sorry, unable to get location: "+error.message+"\n Please contact the admin")
-	}
+  console.log("yes");
 
-	if(bus ){
-		await supabase.from("bus_locations").update({longitude, latitude, accuracy, recorded_at: Date.now()}).eq("bus_id", bus_id);
-	}else {
-				await supabase.from("bus_locations").update({longitude, latitude, accuracy, recorded_at: Date.now()}).eq("bus_id", bus_id);
+  const supabase = await createClient();
 
-	}
+  const { data: bus, error } = await supabase
+    .from("bus_locations")
+    .select("id")
+    .eq("bus_id", bus_id)
+    .maybeSingle();
 
-  
+  if (error) {
+    throw new Error(
+      "Sorry, unable to get location: " +
+        error.message +
+        "\n Please contact the admin"
+    );
+  }
+
+  if (bus) {
+    const { error: updateError } = await supabase
+      .from("bus_locations")
+      .update({
+        longitude,
+        latitude,
+        accuracy,
+        recorded_at: new Date().toISOString(),
+      })
+      .eq("bus_id", bus_id);
+
+    if (updateError) {
+      throw new Error(
+        "Unable to update bus location: " +
+          updateError.message
+      );
+    }
+  } else {
+    const { error: insertError } = await supabase
+      .from("bus_locations")
+      .insert({
+        bus_id,
+        longitude,
+        latitude,
+        accuracy,
+        recorded_at: new Date().toISOString(),
+      });
+
+    if (insertError) {
+      throw new Error(
+        "Unable to save bus location: " +
+          insertError.message
+      );
+    }
+  }
+
+  await activateBus(bus_id);
 }
-
 
 export async function addBus(data:CreateBusInput){
 	

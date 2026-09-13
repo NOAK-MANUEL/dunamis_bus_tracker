@@ -293,7 +293,7 @@ useEffect(()=>{
                     </span>
 
                     <span className="text-xs text-white/30">
-                      {bus.updated_at?.toISOString()}
+                      {bus.updated_at?.toString()}
                     </span>
                   </div>
                 </div>

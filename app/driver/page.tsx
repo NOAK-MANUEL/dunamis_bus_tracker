@@ -54,7 +54,7 @@ export default function DriverPage() {
     try{
       await logDriverIn(selectedBus.id,pin)
 
-      router.push("track/"+selectedBus.id)
+      router.push("/driver/track/"+selectedBus.id)
 
       }catch(error){
             setError(error instanceof Error ? error.message:"");
@@ -206,7 +206,7 @@ export default function DriverPage() {
       </div>
 
       {/* PIN Modal */}
-      {pinOpen && selectedBus && (
+      {(pinOpen && selectedBus) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-5 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#0a1510] p-6 shadow-2xl shadow-black/50">
             <div className="flex items-start justify-between">

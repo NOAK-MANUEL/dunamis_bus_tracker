@@ -1,22 +1,20 @@
 "use client";
 
-import { addBusLocation } from "@/actions/buses";
-import { getBus } from "@/actions/buses";
+import { activateBus, addBusLocation, deactivateBus, getBus } from "@/actions/buses";
 import { Bus } from "@/types/database";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "react-toastify";
 
-const MOVEMENT_THRESHOLD = 100; // meters
-const LOCATION_INTERVAL = 5 * 60 * 1000; // 5 minutes
-const CHECK_INTERVAL = 30 * 60 * 1000; // 30 minutes
+const MOVEMENT_THRESHOLD = 100;
+const LOCATION_INTERVAL = 5 * 60 * 1000;
+const CHECK_INTERVAL = 30 * 60 * 1000;
 
 type Coordinates = {
   latitude: number;
   longitude: number;
   accuracy: number | null;
 };
-
-
 
 function distanceBetween(a: Coordinates, b: Coordinates) {
   const R = 6371000;
@@ -44,12 +42,17 @@ export default function DriverTrackPage() {
   const [bus, setBus] = useState<Bus | null>(null);
   const [loadingBus, setLoadingBus] = useState(true);
 
-  const [location, setLocation] = useState<Coordinates | null>(null);
+  const [location, setLocation] =
+    useState<Coordinates | null>(null);
+
   const [tracking, setTracking] = useState(false);
   const [locationError, setLocationError] = useState("");
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [lastUpdated, setLastUpdated] =
+    useState<Date | null>(null);
 
-  const [showActivePopup, setShowActivePopup] = useState(false);
+  const [showActivePopup, setShowActivePopup] =
+    useState(false);
+
   const [busActive, setBusActive] = useState(false);
 
   const watchId = useRef<number | null>(null);
@@ -94,7 +97,10 @@ export default function DriverTrackPage() {
   }, [id]);
 
   /*
-   * Save the latest GPS position.
+   * Save the current GPS position.
+   *
+   * IMPORTANT:
+   * We await addBusLocation().
    */
   async function saveBusLocation() {
     if (!bus) return;
@@ -104,23 +110,28 @@ export default function DriverTrackPage() {
     if (!current) return;
 
     try {
-      await addBusLocation( bus.id,
-         current.longitude,
-       current.latitude,
-       
-        current.accuracy||0,
+      await addBusLocation(
+        bus.id,
+        current.longitude,
+        current.latitude,
+        current.accuracy ?? 0
       );
 
       setLastUpdated(new Date());
     } catch (error) {
-      console.error("Failed to save bus location:", error);
+      console.error(
+        "Failed to save bus location:",
+        error
+      );
     }
   }
 
   /*
-   * Handle every GPS update from watchPosition().
+   * Handle every GPS update.
    */
-  function handlePosition(position: GeolocationPosition) {
+  async function handlePosition(
+    position: GeolocationPosition
+  ) {
     const newLocation: Coordinates = {
       latitude: position.coords.latitude,
       longitude: position.coords.longitude,
@@ -143,17 +154,17 @@ export default function DriverTrackPage() {
       setBusActive(true);
 
       /*
-       * Save immediately instead of waiting
-       * for the first 5-minute interval.
+       * Wait for the location to actually
+       * be saved before continuing.
        */
-      void saveBusLocation();
+      await saveBusLocation();
 
       return;
     }
 
     /*
-     * Check how far the bus has moved from
-     * the last confirmed location.
+     * Check movement from the last confirmed
+     * location.
      */
     const distance = distanceBetween(
       lastConfirmedLocation.current,
@@ -210,7 +221,7 @@ export default function DriverTrackPage() {
   /*
    * Start tracking.
    */
-  function startTracking() {
+  async function startTracking() {
     if (!bus) return;
 
     if (!("geolocation" in navigator)) {
@@ -245,34 +256,41 @@ export default function DriverTrackPage() {
           timeout: 15_000,
         }
       );
-
+      try{
+      await activateBus(id?.toString()||"")
     setTracking(true);
 
     /*
      * Save the latest location every 5 minutes.
      *
-     * This is completely separate from the
-     * 30-minute activity check.
+     * The callback waits for addBusLocation()
+     * to finish.
      */
-    locationTimer.current = setInterval(() => {
-      void saveBusLocation();
-    }, LOCATION_INTERVAL);
+    locationTimer.current = setInterval(
+      async () => {
+        await saveBusLocation();
+      },
+      LOCATION_INTERVAL
+    );
 
     /*
      * Every 30 minutes check whether the bus
-     * has actually moved at least 100m.
+     * has moved at least 100m.
      */
     checkTimer.current = setInterval(() => {
       if (busMoved.current) {
         setShowActivePopup(true);
       }
     }, CHECK_INTERVAL);
+  }catch(error){
+    toast.error(error instanceof Error && error.message)
+  }
   }
 
   /*
    * Stop tracking.
    */
-  function stopTracking() {
+ async function stopTracking() {
     if (watchId.current !== null) {
       navigator.geolocation.clearWatch(
         watchId.current
@@ -293,16 +311,23 @@ export default function DriverTrackPage() {
       checkTimer.current = null;
     }
 
-    setTracking(false);
+    try{
+      await deactivateBus(id?.toString()||"" )
+      setTracking(false);
     setBusActive(false);
 
     busMoved.current = false;
+    }catch(err){
+      toast.error(err instanceof Error && err.message)
+    }
+
+    
   }
 
   /*
    * Driver confirms the bus is still active.
    */
-  function confirmStillActive() {
+  async function confirmStillActive() {
     const current = currentLocation.current;
 
     if (!current) {
@@ -324,9 +349,15 @@ export default function DriverTrackPage() {
     setShowActivePopup(false);
 
     /*
-     * Save the confirmed position immediately.
+     * Wait until the confirmed position
+     * has been saved.
      */
-    void saveBusLocation();
+    try{
+          await saveBusLocation();
+
+        }catch(err){
+          toast.error(err instanceof Error && err.message)
+        }
   }
 
   /*

@@ -415,7 +415,7 @@ export default function AdminLocationsPage() {
                                 </div>
 
                                 <p className="mt-0.5 text-xs text-white/30">
-                                  {bus.plate_number} · Updated {bus?.updated_at?.toISOString()}
+                                  {bus.plate_number} · Updated {bus?.updated_at?.toString()}
                                 </p>
                               </div>
                             </div>

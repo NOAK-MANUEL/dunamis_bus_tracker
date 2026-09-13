@@ -9,50 +9,6 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 
-// const location = {
-//   name: "Enugu",
-//   region: "Enugu State",
-//   updated: "2 minutes ago",
-// };
-
-// const buses = [
-//   {
-//     id: "bus-01",
-//     name: "Dunamis Bus 01",
-//     plate: "ENU-482-GH",
-//     status: "live",
-//     updated: "2 min ago",
-//     latitude: 6.4584,
-//     longitude: 7.5464,
-//   },
-//   {
-//     id: "bus-02",
-//     name: "Dunamis Bus 02",
-//     plate: "ENU-731-KD",
-//     status: "live",
-//     updated: "4 min ago",
-//     latitude: 6.4701,
-//     longitude: 7.5237,
-//   },
-//   {
-//     id: "bus-03",
-//     name: "Dunamis Bus 03",
-//     plate: "ENU-218-AB",
-//     status: "recent",
-//     updated: "9 min ago",
-//     latitude: 6.4412,
-//     longitude: 7.4981,
-//   },
-//   {
-//     id: "bus-04",
-//     name: "Dunamis Bus 04",
-//     plate: "ENU-905-XM",
-//     status: "stale",
-//     updated: "27 min ago",
-//     latitude: 6.491,
-//     longitude: 7.551,
-//   },
-// ];
 
 type UserLocation = {
   latitude: number;
@@ -114,7 +70,10 @@ export default function LocationPage() {
         bus_locations: b.bus_locations[0],
       }));
 
+      console.log(newArray)
+
       setBuses(newArray as Bus[]);
+      setSelectedBus(newArray[0])
     } catch {
       toast.error("Something went wrong");
     }
@@ -133,8 +92,8 @@ export default function LocationPage() {
     ? distanceBetween(
         userLocation.latitude,
         userLocation.longitude,
-        selectedBus?.bus_location?.latitude || 0,
-        selectedBus?.bus_location?.longitude ||0
+        selectedBus?.bus_locations?.latitude || 0,
+        selectedBus?.bus_locations?.longitude ||0
       )
     : null;
 
@@ -142,8 +101,8 @@ export default function LocationPage() {
     ? getDirection(
         userLocation.latitude,
         userLocation.longitude,
-        selectedBus?.bus_location?.latitude || 0,
-        selectedBus?.bus_location?.longitude ||0
+        selectedBus?.bus_locations?.latitude || 0,
+        selectedBus?.bus_locations?.longitude ||0
       )
     : null;
 
@@ -405,7 +364,7 @@ export default function LocationPage() {
                                 : "text-white/30"
                           }`}
                         >
-                          {bus?.updated_at?.toISOString()}
+                          {bus?.updated_at?.toString()}
                         </span>
                       </div>
                     </button>
@@ -413,7 +372,7 @@ export default function LocationPage() {
                 })}
               </div>
 
-              <div className="mt-4 rounded-2xl border border-white/[0.06] bg-[#07100c]/70 p-4">
+             {selectedBus &&  <div className="mt-4 rounded-2xl border border-white/[0.06] bg-[#07100c]/70 p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-white/25">
@@ -431,12 +390,12 @@ export default function LocationPage() {
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <InfoBox
                     label="Latitude"
-                    value={selectedBus.bus_location!.latitude.toFixed(5)}
+                    value={selectedBus.bus_locations!.latitude.toFixed(5)}
                   />
 
                   <InfoBox
                     label="Longitude"
-                    value={selectedBus.bus_location!.longitude.toFixed(5)}
+                    value={selectedBus.bus_locations!.longitude.toFixed(5)}
                   />
                 </div>
 
@@ -462,8 +421,8 @@ export default function LocationPage() {
                           bearing={getBearing(
                             userLocation.latitude,
                             userLocation.longitude,
-                            selectedBus.bus_location!.latitude,
-                            selectedBus.bus_location!.longitude
+                            selectedBus.bus_locations!.latitude,
+                            selectedBus.bus_locations!.longitude
                           )}
                         />
                         {direction}
@@ -487,7 +446,7 @@ export default function LocationPage() {
                     Allow location to see distance & direction
                   </button>
                 )}
-              </div>
+              </div>}
             </section>
           </div>
         </div>
